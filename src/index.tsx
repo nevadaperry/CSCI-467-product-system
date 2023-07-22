@@ -1,19 +1,28 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import AppHome from "./AppHome";
+import CustomerHome from "./Customer/CustomerHome";
+import AdminHome from "./Admin/AdminHome";
+import EmployeeHome from "./Employee/EmployeeHome";
+import ReceivingHome from "./Receiving/ReceivingHome";
+import Navbar from "./Navbar";
 
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  document.getElementById("root") as HTMLElement
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+root.render(
+  <BrowserRouter>
+    <Navbar />
+    <Routes>
+      {" "}
+      {/* The Switch decides which component to show based on the current URL.*/}
+      <Route path="/" element={<AppHome />}></Route>
+      <Route path="/customer" element={<CustomerHome />}></Route>
+      <Route path="/admin" element={<AdminHome />}></Route>
+      <Route path="/employee" element={<EmployeeHome />}></Route>
+      <Route path="/receiving" element={<ReceivingHome />}></Route>
+    </Routes>
+  </BrowserRouter>
+);
