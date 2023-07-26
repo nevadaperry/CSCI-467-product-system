@@ -258,14 +258,14 @@ $link-hover-color: darken($link-color, 15%);
 $link-hover-decoration: none !default;
 
 // Grid breakpoints
-
 $grid-breakpoints: (
   xs: 0,
   sm: 576px,
-  md: 1px,
-  lg: 768px,
-  xl: 1200px
+  md: 768px,
+  lg: 992px,
+  xl: 1200px,
 );
+
 
 
 @include _assert-ascending($grid-breakpoints, '$grid-breakpoints');
