@@ -1,19 +1,18 @@
-import { faHouse } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React from 'react';
+import './global.scss';
 
-function Home() {
+export default function Home() {
   return (
     <div>
       <header>
-        <h1 className="text-3xl font-bold underline">Home page</h1>
-        <FontAwesomeIcon icon={faHouse} />
-        <a href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
-          Learn React
-        </a>
+        <h1>Welcome to Product System!</h1>
+        <p>
+          <span className="badge bg-success">
+            Your source for all things automotive.
+          </span>
+        </p>
+        <p>Select a system above to get started.</p>
       </header>
     </div>
   );
 }
-
-export default Home;
