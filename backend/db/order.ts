@@ -140,10 +140,11 @@ export async function updateOrder(
       )
       CROSS JOIN new_order_state
     )
+    SELECT something AS success
     -- TODO
   `);
 
-  return { conflict: !row?.success };
+  return row?.success;
 }
 
 /* TODO

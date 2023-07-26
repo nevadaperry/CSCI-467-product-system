@@ -1,4 +1,6 @@
-function AppHome() {
+import React from 'react';
+
+function Home() {
   return (
     <div>
       <header>
@@ -11,4 +13,4 @@ function AppHome() {
   );
 }
 
-export default AppHome;
+export default Home;
