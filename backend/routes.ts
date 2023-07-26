@@ -1,6 +1,9 @@
 import * as hapi from '@hapi/hapi';
 import * as pg from 'pg';
-import { someTestEndpoint } from './atomic';
+import {
+  testEndpointThatCreatesProduct,
+  testEndpointThatUpdatesProduct,
+} from './endpoints';
 
 export async function addRoutes(server: hapi.Server, db: pg.Pool) {
   /**
@@ -26,7 +29,13 @@ export async function addRoutes(server: hapi.Server, db: pg.Pool) {
 
   server.route({
     method: 'GET',
-    path: '/',
-    handler: wrap(someTestEndpoint),
+    path: '/test-endpoint-that-creates-product',
+    handler: wrap(testEndpointThatCreatesProduct),
+  });
+
+  server.route({
+    method: 'GET',
+    path: '/test-endpoint-that-updates-product',
+    handler: wrap(testEndpointThatUpdatesProduct),
   });
 }

@@ -14,10 +14,22 @@ export interface Customer {
 }
 export type CustomerUpdate = { customer_id: number } & Customer;
 
+export interface OrderLineItem {
+  product_id: number;
+  quantity: number;
+}
 export interface Order {
-  order_id: number;
-  line_items: { product_id: number; quantity: number }[];
   auth_number: string;
+  cc_last_four: string;
+  shipping_address: string;
   status: 'authorized' | 'shipped';
+  line_items: OrderLineItem[];
 }
 export type OrderUpdate = { order_id: number } & Order;
+
+export interface FeeSchedule {
+  weight_brackets: {
+    weight_lower_bound: number;
+    fee: number;
+  }[];
+}
