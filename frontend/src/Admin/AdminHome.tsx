@@ -1,14 +1,18 @@
 import React from 'react';
+import Header from './Header';
+import ShippingAndHandlingSettings from './ShippingAndHandlingSettings';
+import OrderListing from './OrderListing';
+import OrderSearch from './OrderSearch';
+import OrderDetails from './OrderDetails';
 
 function AdminHome() {
   return (
     <div>
-      <header>
-        <h1 className="text-3xl font-bold underline">Admin home page</h1>
-        <a href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
-          Learn React
-        </a>
-      </header>
+      <Header />
+      <ShippingAndHandlingSettings />
+      <OrderListing />
+      <OrderSearch />
+      <OrderDetails />
     </div>
   );
 }
