@@ -34,7 +34,7 @@ import {
 var ps;
 
 function Sidebar(props) {
-  const location = useLocation();
+const location = useLocation();
   const sidebarRef = React.useRef(null);
   // verifies if routeName is the one active (in browser input)
   const activeRoute = (routeName) => {
