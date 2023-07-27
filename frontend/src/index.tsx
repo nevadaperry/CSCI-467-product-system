@@ -14,8 +14,6 @@ import React from 'react';
 import { Nav, NavItem, NavLink } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faCarBurst,
-  faCoffee,
   faGaugeHigh,
 } from '@fortawesome/free-solid-svg-icons';
 
