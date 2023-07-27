@@ -6,7 +6,37 @@ export async function createOrder(db: pg.Pool, order: Order) {
   const {
     rows: [row],
   } = await db.query<{ order_id: number }>(SQL`
-    WITH new_order AS (
+    WITH stats1 AS (
+      SELECT
+        coalesce(sum(product.price * line_item.quantity), 0) as subtotal,
+        coalesce(sum(product.weight * line_item.quantity), 0) as total_weight
+      FROM jsonb_to_recordset(${JSON.stringify(
+        order.line_items
+      )}) AS line_item (
+        product_id bigint,
+        quantity bigint
+      )
+      JOIN product ON line_item.product_id = product.id
+    ), stats2 AS (
+      SELECT
+        stats1.subtotal + weight_bracket_of_order.fee AS total_price
+      FROM stats1
+      CROSS JOIN (
+        SELECT id
+        FROM fee_schedule_state
+        ORDER BY timestamp DESC
+        LIMIT 1
+      ) fee_schedule_state_latest
+      CROSS JOIN LATERAL (
+        SELECT wb.fee
+        FROM weight_bracket wb
+        CROSS JOIN fee_schedule_state_latest fssl
+        WHERE wb.fee_schedule_state_id = fssl.id
+          AND wb.lower_bound < stats1.total_weight
+        ORDER BY wb.lower_bound ASC
+        LIMIT 1
+      ) weight_bracket_of_order
+    ), new_order AS (
       INSERT INTO "order" DEFAULT VALUES
       RETURNING id
     ), new_order_state AS (
@@ -15,15 +45,18 @@ export async function createOrder(db: pg.Pool, order: Order) {
         auth_number,
         cc_last_four,
         shipping_address,
-        status
+        status,
+        total_price
       )
       SELECT
         new_order.id,
         ${order.auth_number},
         ${order.cc_last_four},
         ${order.shipping_address},
-        ${order.status}
+        ${order.status},
+        stats2.total_price
       FROM new_order
+      CROSS JOIN stats2
       RETURNING id
     ), new_order_state_line_item AS (
       INSERT INTO order_state_line_item (
@@ -35,9 +68,8 @@ export async function createOrder(db: pg.Pool, order: Order) {
         new_order_state.order_state_id,
         line_item.product_id,
         line_item.quantity
-      FROM jsonb_to_recordset(${JSON.stringify(
-        order.line_items
-      )}) AS line_item (
+      FROM jsonb_to_recordset(${JSON.stringify(order.line_items)}) AS line_item
+      (
         product_id bigint,
         quantity bigint
       )
@@ -56,7 +88,7 @@ export async function readOrder(db: pg.Pool, id: number) {
   const {
     rows: [order],
   } = await db.query<Order>(SQL`
-    WITH latest AS (
+    WITH latest_order_state AS (
       SELECT *
       FROM order_state
       WHERE order_id = ${id}
@@ -68,17 +100,16 @@ export async function readOrder(db: pg.Pool, id: number) {
       cc_last_four,
       shipping_address,
       status,
-      coalesce(line_items, array[]::json[]) as line_items
-    FROM latest latest_order_state
+      coalesce(line_items, array[]::jsonb) as line_items
+    FROM latest_order_state
     LEFT JOIN LATERAL (
       SELECT
-        json_agg(json_build_object(
+        jsonb_agg(jsonb_build_object(
           'product_id', osli.product_id,
           'quantity', osli.quantity
         )) AS line_items
-      FROM latest
-      LEFT JOIN order_state_line_item osli
-        ON osli.order_state_id = latest_order_state.id
+      FROM order_state_line_item osli
+      WHERE osli.order_state_id = latest_order_state.id
     ) line_item_agg ON TRUE
     WHERE deleted = false
   `);
@@ -94,27 +125,63 @@ export async function updateOrder(
   const {
     rows: [row],
   } = await db.query<{ success: boolean }>(SQL`
-    WITH new_order_state AS (
+    WITH stats1 AS (
+      SELECT
+        coalesce(sum(
+          product.price * line_item.quantity
+        ), 0) as subtotal,
+        coalesce(sum(
+          product.weight * line_item.quantity
+        ), 0) as total_weight
+      FROM jsonb_to_recordset(${JSON.stringify(update.line_items)}) AS line_item
+        (
+          product_id bigint,
+          quantity bigint
+        )
+      JOIN product ON line_item.product_id = product.id
+    ), stats2 AS (
+      SELECT
+        stats1.subtotal + weight_bracket_of_order.fee AS total_price
+      FROM stats1
+      CROSS JOIN (
+        SELECT id
+        FROM fee_schedule_state
+        ORDER BY timestamp DESC
+        LIMIT 1
+      ) fee_schedule_state_latest
+      CROSS JOIN LATERAL (
+        SELECT wb.fee
+        FROM weight_bracket wb
+        CROSS JOIN fee_schedule_state_latest fssl
+        WHERE wb.fee_schedule_state_id = fssl.id
+          AND wb.lower_bound < stats1.total_weight
+        ORDER BY wb.lower_bound ASC
+        LIMIT 1
+      ) weight_bracket_of_order
+    ), latest_order_state AS (
+      SELECT *
+      FROM order_state
+      WHERE order_id = ${update.id}
+      ORDER BY timestamp DESC
+      LIMIT 1
+    ), new_order_state AS (
       INSERT INTO order_state (
         order_id,
         auth_number,
         cc_last_four,
         shipping_address,
-        status
+        status,
+        total_price
       )
       SELECT
-        ${update.order_id},
+        ${update.id},
         ${update.auth_number},
         ${update.cc_last_four},
         ${update.shipping_address},
-        ${update.status}
-      FROM (
-        SELECT *
-        FROM order_state
-        WHERE order_id = ${update.order_id}
-        ORDER BY timestamp DESC
-        LIMIT 1
-      ) latest
+        ${update.status},
+        stats2.total_price
+      FROM latest_order_state latest
+      CROSS JOIN stats2
       -- Ideally, a lateral subquery here would validate "existing.line_items"
       -- against the order_state_line_items associated with "latest"
       WHERE latest.auth_number = ${existing.auth_number}
@@ -132,36 +199,42 @@ export async function updateOrder(
         new_order_state.order_state_id,
         line_item.product_id,
         line_item.quantity
-      FROM jsonb_to_recordset(${JSON.stringify(
-        update.line_items
-      )}) AS line_item (
+      FROM jsonb_to_recordset(${JSON.stringify(update.line_items)}) AS line_item
+      (
         product_id bigint,
         quantity bigint
       )
       CROSS JOIN new_order_state
+      RETURNING true AS success
     )
-    SELECT something AS success
-    -- TODO
+    SELECT nos.success AND nosli.success AS success
+    FROM new_order_state nos
+    CROSS JOIN new_order_state_line_item nosli
   `);
 
   return row?.success;
 }
 
-/* TODO
 export async function deleteOrder(db: pg.Pool, id: number) {
   const {
     rows: [row],
   } = await db.query<{ success: boolean }>(SQL`
     INSERT INTO order_state (
       order_id,
-      name,
-      email,
+      auth_number,
+      cc_last_four,
+      shipping_address,
+      status,
+      total_price
       deleted
     )
     SELECT
       order_id,
-      name,
-      email,
+      auth_number,
+      cc_last_four,
+      shipping_address,
+      status,
+      total_price,
       true
     FROM (
       SELECT *
@@ -175,4 +248,3 @@ export async function deleteOrder(db: pg.Pool, id: number) {
 
   return row?.success;
 }
-*/

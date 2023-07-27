@@ -61,13 +61,13 @@ export async function updateCustomer(
       email
     )
     SELECT
-      ${update.customer_id},
+      ${update.id},
       ${update.name},
       ${update.email}
     FROM (
       SELECT *
       FROM customer_state
-      WHERE customer_id = ${update.customer_id}
+      WHERE customer_id = ${update.id}
       ORDER BY timestamp DESC
       LIMIT 1
     ) latest

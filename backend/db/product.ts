@@ -1,11 +1,13 @@
 import * as pg from 'pg';
+import * as hapi from '@hapi/hapi';
 import SQL from 'pg-template-tag';
-import { Product, ProductUpdate } from '../../structures/resource';
+import { Product, ProductId, ProductUpdate } from '../../structures/resource';
+import { http } from '../routes';
 
 export async function createProduct(db: pg.Pool, product: Product) {
   const {
-    rows: [row],
-  } = await db.query<{ product_id: number }>(SQL`
+    rows: [result],
+  } = await db.query<ProductId>(SQL`
     WITH new_product AS (
       INSERT INTO product DEFAULT VALUES
       RETURNING id
@@ -30,8 +32,20 @@ export async function createProduct(db: pg.Pool, product: Product) {
     FROM new_product
     RETURNING product_id
   `);
-
-  return row.product_id;
+  return result;
+}
+export async function httpCreateProduct(
+  request: hapi.Request,
+  h: hapi.ResponseToolkit,
+  db: pg.Pool
+): Promise<hapi.ResponseObject> {
+  const result = await createProduct(db, request.payload as Product);
+  if (!result) {
+    return h
+      .response(`Unexpected: Missing result from product creation`)
+      .code(http.internalServerError);
+  }
+  return h.response(result);
 }
 
 export async function readProduct(db: pg.Pool, id: number) {
@@ -51,17 +65,30 @@ export async function readProduct(db: pg.Pool, id: number) {
     FROM latest
     WHERE deleted = false
   `);
-
   return product;
+}
+
+export async function httpReadProduct(
+  request: hapi.Request,
+  h: hapi.ResponseToolkit,
+  db: pg.Pool
+): Promise<hapi.ResponseObject> {
+  const product = await readProduct(db, request.params.id);
+  if (!product) {
+    return h
+      .response(`Product with id ${request.params.id} not found.`)
+      .code(http.notFound);
+  }
+  return h.response(product);
 }
 
 export async function updateProduct(
   db: pg.Pool,
-  update: ProductUpdate,
-  existing: Product
+  params: { existing: Product; update: ProductUpdate }
 ) {
+  const { existing, update } = params;
   const {
-    rows: [row],
+    rows: [result],
   } = await db.query<{ success: boolean }>(SQL`
     INSERT INTO product_state (
       product_id,
@@ -73,7 +100,7 @@ export async function updateProduct(
       quantity
     )
     SELECT
-      ${update.product_id},
+      ${update.id},
       ${update.part_number},
       ${update.description},
       ${update.weight},
@@ -83,7 +110,7 @@ export async function updateProduct(
     FROM (
       SELECT *
       FROM product_state
-      WHERE product_id = ${update.product_id}
+      WHERE product_id = ${update.id}
       ORDER BY timestamp DESC
       LIMIT 1
     ) latest
@@ -95,13 +122,31 @@ export async function updateProduct(
       AND latest.quantity = ${existing.quantity}
     RETURNING true AS success
   `);
+  return result;
+}
 
-  return row?.success;
+export async function httpUpdateProduct(
+  request: hapi.Request,
+  h: hapi.ResponseToolkit,
+  db: pg.Pool
+): Promise<hapi.ResponseObject> {
+  const result = await updateProduct(
+    db,
+    request.payload as { existing: Product; update: ProductUpdate }
+  );
+  if (!result) {
+    return h
+      .response(
+        `Product has changed since the page loaded. Your update was not applied. Please reload and try again.`
+      )
+      .code(http.conflict);
+  }
+  return h.response(result).code(http.noContent);
 }
 
 export async function deleteProduct(db: pg.Pool, id: number) {
   const {
-    rows: [row],
+    rows: [result],
   } = await db.query<{ success: boolean }>(SQL`
     INSERT INTO product_state (
       product_id,
@@ -131,6 +176,19 @@ export async function deleteProduct(db: pg.Pool, id: number) {
     ) latest
     RETURNING true AS success
   `);
+  return result;
+}
 
-  return row?.success;
+export async function httpDeleteProduct(
+  request: hapi.Request,
+  h: hapi.ResponseToolkit,
+  db: pg.Pool
+): Promise<hapi.ResponseObject> {
+  const result = await deleteProduct(db, request.params.id);
+  if (!result) {
+    return h
+      .response(`Unexpected: Missing response from product deletion`)
+      .code(http.internalServerError);
+  }
+  return h.response().code(http.noContent);
 }

@@ -1,12 +1,10 @@
--- After making any edits, you should create and run a migration in Supabase
-
--- Aim: Although we could have just thrown everything in tables matching
--- the project requirements, our data and transaction model aims to provide
--- these qualities as well:
--- 
--- 1. Traceability: Each resource contains a full history in the form of states.
--- 2. Atomicity: All CRUD operations are performed as single statements that
---    guarantee complete success or failure.
+/*
+ * Aim: Our data/transaction model aims to provide these qualities:
+ * 
+ * 1. Traceability: Each resource contains a full history in the form of states.
+ * 2. Atomicity: All CRUD operations are performed as single statements that
+ *    guarantee complete success or failure.
+ */
 
 CREATE TABLE product (
   id bigserial PRIMARY KEY
@@ -74,6 +72,12 @@ CREATE INDEX order_state_line_item_order_state_id ON order_state_line_item (orde
 CREATE TABLE fee_schedule_state (
   id bigserial PRIMARY KEY,
   timestamp timestamptz NOT NULL DEFAULT now(),
-  weight_brackets jsonb NOT NULL, -- Not a proper data model but saves dev time
 );
 CREATE INDEX fee_schedule_state_timestamp ON fee_schedule_state (timestamp);
+CREATE TABLE weight_bracket (
+  id bigserial PRIMARY KEY,
+  fee_schedule_state_id bigint NOT NULL REFERENCES fee_schedule_state(id) ON DELETE RESTRICT,
+  lower_bound numeric(11,2) NOT NULL,
+  fee numeric(11,2) NOT NULL
+);
+CREATE INDEX weight_bracket_fee_schedule_state_id_lower_bound ON weight_bracket (fee_schedule_state_id, lower_bound);
