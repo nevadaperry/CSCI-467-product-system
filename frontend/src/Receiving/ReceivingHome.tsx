@@ -7,7 +7,7 @@ function ReceivingHome() {
   return (
     <div>
       <header>
-        <h1 className="text-3xl font-bold underline">Receiving</h1>
+        <h1>Receiving</h1>
       </header>
       <Button
         onClick={() => {

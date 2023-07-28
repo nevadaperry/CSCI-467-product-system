@@ -20,7 +20,7 @@ import { addRoutes } from './routes';
 
   console.log(`Starting Hapi server`);
   const server = hapi.server({
-    port: 3001,
+    port: process.env.PORT ?? 3001,
     host: 'localhost',
     routes: {
       cors: {

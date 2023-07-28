@@ -3,6 +3,7 @@ import ShippingAndHandlingSettings from './ShippingAndHandlingSettings';
 import OrderListing from './OrderListing';
 import OrderSearch from './OrderSearch';
 import OrderDetails from './OrderDetails';
+import { Button } from 'reactstrap';
 
 // Define the Section enum here
 /* 
@@ -15,29 +16,32 @@ enum Section {
   ORDERS,
 }
 
-
 function AdminHome() {
   const [currentSection, setCurrentSection] = useState(Section.SHIPPING);
-// State to keep track of which section is currently being displayed.
+  // State to keep track of which section is currently being displayed.
   // By default, it is set to the Shipping and Handling Settings section (SHIPPING).
   return (
     <div>
       <header>
-        <h1 className="text-3xl font-bold underline">Admin Interface</h1>
+        <h1>Admin Interface</h1>
         {/* Two Buttons for Shipping Cost and Orders */}
         <div className="header-buttons">
-          <button
+          <Button
             className="header-button"
+            color={currentSection === Section.ORDERS ? 'primary' : 'secondary'}
             onClick={() => setCurrentSection(Section.ORDERS)}
           >
             Orders
-          </button>
-          <button
+          </Button>
+          <Button
             className="header-button"
+            color={
+              currentSection === Section.SHIPPING ? 'primary' : 'secondary'
+            }
             onClick={() => setCurrentSection(Section.SHIPPING)}
           >
             Shipping Cost
-          </button>
+          </Button>
         </div>
       </header>
       {currentSection === Section.SHIPPING ? (

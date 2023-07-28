@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Button, Input, Label } from 'reactstrap';
 
 function ShippingAndHandlingSettings() {
   // State to manage weight bracket inputs
@@ -36,45 +37,62 @@ function ShippingAndHandlingSettings() {
   return (
     <div>
       <h2>Shipping and Handling Settings</h2>
-      {weightBrackets.map((bracket, index) => (
-        <div key={index}>
-          <label htmlFor={`minWeight-${index}`}>Min Weight:</label>
-          <input
-            id={`minWeight-${index}`}
-            type="number"
-            value={bracket.minWeight}
-            onChange={(e) =>
-              handleWeightBracketChange(index, 'minWeight', e.target.value)
-            }
-          />
-          <label htmlFor={`maxWeight-${index}`}>Max Weight:</label>
-          <input
-            id={`maxWeight-${index}`}
-            type="number"
-            value={bracket.maxWeight}
-            onChange={(e) =>
-              handleWeightBracketChange(index, 'maxWeight', e.target.value)
-            }
-          />
-          <label htmlFor={`charge-${index}`}>Charge ($):</label>
-          <input
-            id={`charge-${index}`}
-            type="number"
-            step="0.01"
-            value={bracket.charge}
-            onChange={(e) =>
-              handleWeightBracketChange(index, 'charge', parseFloat(e.target.value))
-            }
-          />
-          <button onClick={() => removeWeightBracket(index)}>Remove</button>
-        </div>
-      ))}
-      <button onClick={addWeightBracket}>Add Weight Bracket</button>
-      <button>Save Settings</button>
+      <div className="container">
+        {weightBrackets.map((bracket, index) => (
+          <div className="row my-3" key={index}>
+            <div className="col ps-cell">
+              <Label htmlFor={`minWeight-${index}`}>Min Weight:&nbsp;</Label>
+              <Input
+                id={`minWeight-${index}`}
+                type="number"
+                value={bracket.minWeight}
+                onChange={(e) =>
+                  handleWeightBracketChange(index, 'minWeight', e.target.value)
+                }
+              />
+            </div>
+            <div className="col ps-cell">
+              <Label htmlFor={`maxWeight-${index}`}>Max Weight:&nbsp;</Label>
+              <Input
+                id={`maxWeight-${index}`}
+                type="number"
+                value={bracket.maxWeight}
+                onChange={(e) =>
+                  handleWeightBracketChange(index, 'maxWeight', e.target.value)
+                }
+              />
+            </div>
+            <div className="col ps-cell">
+              <Label htmlFor={`charge-${index}`}>Charge ($):&nbsp;</Label>
+              <Input
+                id={`charge-${index}`}
+                type="number"
+                step="0.01"
+                value={bracket.charge}
+                onChange={(e) =>
+                  handleWeightBracketChange(
+                    index,
+                    'charge',
+                    parseFloat(e.target.value)
+                  )
+                }
+              />
+            </div>
+            <div className="col ps-cell">
+              <Button
+                className="btn-danger"
+                onClick={() => removeWeightBracket(index)}
+              >
+                Remove
+              </Button>
+            </div>
+          </div>
+        ))}
+        <Button onClick={addWeightBracket}>Add Weight Bracket</Button>
+        <Button color="success">Save Settings</Button>
+      </div>
     </div>
   );
 }
 
 export default ShippingAndHandlingSettings;
-
-

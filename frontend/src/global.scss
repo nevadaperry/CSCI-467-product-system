@@ -12,3 +12,12 @@
 .ps-nav {
   margin-bottom: 1em !important;
 }
+
+.ps-cell {
+  display: flex;
+}
+
+.ps-cell * {
+  align-self: center;
+  white-space: nowrap;
+}

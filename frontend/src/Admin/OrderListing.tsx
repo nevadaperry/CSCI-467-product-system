@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from 'reactstrap';
 
 // Sample data to represent orders
 const sampleOrders = [
@@ -25,13 +26,13 @@ function OrderListing() {
       {/* <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /> */}
 
       {/* Order Listing Table */}
-      <table>
+      <table className="table">
         <thead>
           <tr>
-            <th>Order ID</th>
-            <th>Order Date</th>
-            <th>Order Total</th>
-            <th>Details</th>
+            <th scope="col">Order ID</th>
+            <th scope="col">Order Date</th>
+            <th scope="col">Order Total</th>
+            <th scope="col">Details</th>
           </tr>
         </thead>
         <tbody>
@@ -46,9 +47,9 @@ function OrderListing() {
               <td>${order.total_price}</td>
               <td>
                 {/* Button to show more details (link to OrderDetails.tsx) */}
-                <button onClick={() => console.log('Show more details')}>
+                <Button onClick={() => console.log('Show more details')}>
                   Details
-                </button>
+                </Button>
               </td>
             </tr>
           ))}
