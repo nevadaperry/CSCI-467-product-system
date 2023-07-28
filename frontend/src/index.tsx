@@ -13,11 +13,7 @@ import ReceivingHome from './Receiving/ReceivingHome';
 import React from 'react';
 import { Nav, NavItem, NavLink } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faCarBurst,
-  faCoffee,
-  faGaugeHigh,
-} from '@fortawesome/free-solid-svg-icons';
+import { faGaugeHigh } from '@fortawesome/free-solid-svg-icons';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './global.scss';
@@ -31,48 +27,28 @@ root.render(
     <div className="container">
       <Nav className="ps-nav" pills>
         <NavItem>
-          <NavLink tag={RouterNavLink} exact to="/" activeClassName="active">
+          <NavLink tag={RouterNavLink} to="/">
             <FontAwesomeIcon icon={faGaugeHigh} />
             &nbsp;Product System
           </NavLink>
         </NavItem>
         <NavItem>
-          <NavLink
-            tag={RouterNavLink}
-            exact
-            to="/customer"
-            activeClassName="active"
-          >
+          <NavLink tag={RouterNavLink} to="/customer">
             Customer
           </NavLink>
         </NavItem>
         <NavItem>
-          <NavLink
-            tag={RouterNavLink}
-            exact
-            to="/admin"
-            activeClassName="active"
-          >
+          <NavLink tag={RouterNavLink} to="/admin">
             Admin
           </NavLink>
         </NavItem>
         <NavItem>
-          <NavLink
-            tag={RouterNavLink}
-            exact
-            to="/shipping"
-            activeClassName="active"
-          >
+          <NavLink tag={RouterNavLink} to="/shipping">
             Shipping
           </NavLink>
         </NavItem>
         <NavItem>
-          <NavLink
-            tag={RouterNavLink}
-            exact
-            to="/receiving"
-            activeClassName="active"
-          >
+          <NavLink tag={RouterNavLink} to="/receiving">
             Receiving
           </NavLink>
         </NavItem>

@@ -22,6 +22,11 @@ import { addRoutes } from './routes';
   const server = hapi.server({
     port: 3001,
     host: 'localhost',
+    routes: {
+      cors: {
+        origin: ['*'],
+      },
+    },
   });
   addRoutes(server, db);
 

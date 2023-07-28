@@ -1,11 +1,16 @@
 import * as pg from 'pg';
 import SQL from 'pg-template-tag';
-import { Customer, CustomerUpdate } from '../../structures/resource';
+import {
+  CreateResult,
+  Customer,
+  CustomerFilters,
+  UpdateResult,
+} from '../../structures/resource';
 
 export async function createCustomer(db: pg.Pool, customer: Customer) {
   const {
-    rows: [row],
-  } = await db.query<{ customer_id: number }>(SQL`
+    rows: [result],
+  } = await db.query<CreateResult>(SQL`
     WITH new_customer AS (
       INSERT INTO customer DEFAULT VALUES
       RETURNING id
@@ -22,8 +27,7 @@ export async function createCustomer(db: pg.Pool, customer: Customer) {
     FROM new_customer
     RETURNING customer_id
   `);
-
-  return row?.customer_id;
+  return result;
 }
 
 export async function readCustomer(db: pg.Pool, id: number) {
@@ -43,46 +47,18 @@ export async function readCustomer(db: pg.Pool, id: number) {
     FROM latest
     WHERE deleted = false
   `);
-
   return customer;
 }
 
 export async function updateCustomer(
   db: pg.Pool,
+  id: number,
   existing: Customer,
-  update: CustomerUpdate
+  update: Customer
 ) {
   const {
-    rows: [row],
-  } = await db.query<{ success: boolean }>(SQL`
-    INSERT INTO customer_state (
-      customer_id,
-      name,
-      email
-    )
-    SELECT
-      ${update.id},
-      ${update.name},
-      ${update.email}
-    FROM (
-      SELECT *
-      FROM customer_state
-      WHERE customer_id = ${update.id}
-      ORDER BY timestamp DESC
-      LIMIT 1
-    ) latest
-    WHERE latest.name = ${existing.name}
-      AND latest.email = ${existing.email}
-    RETURNING true AS success
-  `);
-
-  return row?.success;
-}
-
-export async function deleteCustomer(db: pg.Pool, id: number) {
-  const {
-    rows: [row],
-  } = await db.query<{ success: boolean }>(SQL`
+    rows: [result],
+  } = await db.query<UpdateResult>(SQL`
     INSERT INTO customer_state (
       customer_id,
       name,
@@ -90,10 +66,10 @@ export async function deleteCustomer(db: pg.Pool, id: number) {
       deleted
     )
     SELECT
-      customer_id,
-      name,
-      email,
-      true
+      ${id},
+      ${update.name},
+      ${update.email},
+      ${update.deleted}
     FROM (
       SELECT *
       FROM customer_state
@@ -101,8 +77,26 @@ export async function deleteCustomer(db: pg.Pool, id: number) {
       ORDER BY timestamp DESC
       LIMIT 1
     ) latest
+    WHERE latest.name = ${existing.name}
+      AND latest.email = ${existing.email}
+      AND latest.deleted = ${existing.deleted}
     RETURNING true AS success
   `);
+  return result;
+}
 
-  return row?.success;
+export async function listCustomers(db: pg.Pool, _filters: CustomerFilters) {
+  const { rows: customers } = await db.query<Customer>(SQL`
+    WITH latest AS (
+      SELECT DISTINCT ON (customer_id) *
+      FROM customer_state
+      ORDER BY timestamp DESC
+    )
+    SELECT
+      name,
+      email
+    FROM latest
+    WHERE deleted = false
+  `);
+  return customers;
 }

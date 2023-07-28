@@ -1,65 +1,131 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import {
+  CreateResult,
   Customer,
-  CustomerUpdate,
+  CustomerFilters,
   FeeSchedule,
   Order,
-  OrderUpdate,
+  OrderFilters,
   Product,
-  ProductId,
-  ProductUpdate,
+  ProductFilters,
+  UpdateResult,
 } from '../../structures/resource';
 
-const apiUrl = '/api';
-
-async function createProduct(product: Product) {
-  return await axios.post<ProductId>(`${apiUrl}/product`, product);
-}
-async function readProduct(id: number) {
-  return await axios.get<Product>(`${apiUrl}/product/${id}`);
-}
-async function updateProduct(params: {
-  existing: Product;
-  update: ProductUpdate;
-}) {
-  return await axios.put(`${apiUrl}/product`, params);
-}
-async function deleteProduct(id: number) {
-  return await axios.delete(`${apiUrl}/product/${id}`);
+const apiUrl = {
+  development: 'http://localhost:3001',
+  test: 'http://localhost:3001',
+  production: 'https://product-system.onrender.com',
+}[process.env.NODE_ENV!];
+if (!apiUrl) {
+  throw new Error(`Unexpected NODE_ENV: ${process.env.NODE_ENV}`);
 }
 
-async function createCustomer(customer: Customer) {
-  return await axios.post(`${apiUrl}/customer`, customer);
-}
-async function readCustomer(id: number) {
-  return await axios.get(`${apiUrl}/customer/${id}`);
-}
-async function updateCustomer(params: {
-  existing: Customer;
-  update: CustomerUpdate;
-}) {
-  return await axios.put(`${apiUrl}/customer`, params);
-}
-async function deleteCustomer(id: number) {
-  return await axios.delete(`${apiUrl}/customer/${id}`);
+function handleApiResponse(response: AxiosResponse) {
+  return response.data;
 }
 
-async function createOrder(order: Order) {
-  return await axios.post(`${apiUrl}/order`, order);
+export async function createProduct(product: Product) {
+  return handleApiResponse(
+    await axios.post<CreateResult>(`${apiUrl}/product`, product)
+  );
 }
-async function readOrder(id: number) {
-  return await axios.get(`${apiUrl}/order/${id}`);
+export async function readProduct(id: number) {
+  return handleApiResponse(await axios.get<Product>(`${apiUrl}/product/${id}`));
 }
-async function updateOrder(params: { existing: Order; update: OrderUpdate }) {
-  return await axios.put(`${apiUrl}/order`, params);
+export async function updateProduct(
+  id: number,
+  existing: Product,
+  update: Product
+) {
+  return handleApiResponse(
+    await axios.put<UpdateResult>(`${apiUrl}/product/${id}`, {
+      existing,
+      update,
+    })
+  );
 }
-async function deleteOrder(id: number) {
-  return await axios.delete(`${apiUrl}/order/${id}`);
+export async function deleteProduct(id: number, existing: Product) {
+  return await updateProduct(id, existing, { ...existing, deleted: true });
+}
+export async function listProducts(filters: ProductFilters) {
+  return handleApiResponse(
+    await axios.get<Product[]>(`${apiUrl}/product`, { params: filters })
+  );
 }
 
-async function readFeeSchedule() {
-  return await axios.get(`${apiUrl}/fee-schedule`);
+export async function createCustomer(customer: Customer) {
+  return handleApiResponse(
+    await axios.post<CreateResult>(`${apiUrl}/customer`, customer)
+  );
 }
-async function updateFeeSchedule(feeSchedule: FeeSchedule) {
-  return await axios.put(`${apiUrl}/fee-schedule`, feeSchedule);
+export async function readCustomer(id: number) {
+  return handleApiResponse(
+    await axios.get<UpdateResult>(`${apiUrl}/customer/${id}`)
+  );
+}
+export async function updateCustomer(
+  id: number,
+  existing: Customer,
+  update: Customer
+) {
+  return handleApiResponse(
+    await axios.put<UpdateResult>(`${apiUrl}/customer/${id}`, {
+      existing,
+      update,
+    })
+  );
+}
+export async function deleteCustomer(id: number, existing: Customer) {
+  return await updateCustomer(id, existing, { ...existing, deleted: true });
+}
+export async function listCustomers(filters: CustomerFilters) {
+  return handleApiResponse(
+    await axios.get<Customer[]>(`${apiUrl}/customer`, {
+      params: filters,
+    })
+  );
+}
+
+export async function createOrder(order: Order) {
+  return handleApiResponse(
+    await axios.post<CreateResult>(`${apiUrl}/order`, order)
+  );
+}
+export async function readOrder(id: number) {
+  return handleApiResponse(await axios.get<Order>(`${apiUrl}/order/${id}`));
+}
+export async function updateOrder(id: number, existing: Order, update: Order) {
+  return handleApiResponse(
+    await axios.put<UpdateResult>(`${apiUrl}/order/${id}`, {
+      existing,
+      update,
+    })
+  );
+}
+export async function deleteOrder(id: number, existing: Order) {
+  return await updateOrder(id, existing, { ...existing, deleted: true });
+}
+export async function listOrders(filters: OrderFilters) {
+  return handleApiResponse(
+    await axios.get<Order[]>(`${apiUrl}/order`, {
+      params: filters,
+    })
+  );
+}
+
+export async function readFeeSchedule() {
+  return handleApiResponse(
+    await axios.get<FeeSchedule>(`${apiUrl}/fee-schedule`)
+  );
+}
+export async function updateFeeSchedule(
+  existing: FeeSchedule,
+  update: FeeSchedule
+) {
+  return handleApiResponse(
+    await axios.put<UpdateResult>(`${apiUrl}/fee-schedule`, {
+      existing,
+      update,
+    })
+  );
 }

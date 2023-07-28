@@ -1,10 +1,8 @@
 import * as pg from 'pg';
-import * as hapi from '@hapi/hapi';
-import { http } from '../routes';
 import SQL from 'pg-template-tag';
-import { FeeSchedule } from '../../structures/resource';
+import { FeeSchedule, UpdateResult } from '../../structures/resource';
 
-export async function readFeeSchedule(db: pg.Pool): Promise<FeeSchedule> {
+export async function readFeeSchedule(db: pg.Pool, _id: number) {
   const {
     rows: [feeSchedule],
   } = await db.query<FeeSchedule>(SQL`
@@ -30,25 +28,16 @@ export async function readFeeSchedule(db: pg.Pool): Promise<FeeSchedule> {
   `);
   return feeSchedule;
 }
-export async function httpReadFeeSchedule(
-  request: hapi.Request,
-  h: hapi.ResponseToolkit,
-  db: pg.Pool
-) {
-  const feeSchedule = await readFeeSchedule(db);
-  if (!feeSchedule) {
-    return h.response(`No fee schedule exists.`).code(http.notFound);
-  }
-  return h.response(feeSchedule);
-}
 
 export async function updateFeeSchedule(
   db: pg.Pool,
+  _id: any,
+  _existing: any,
   update: FeeSchedule
-): Promise<{ success: boolean }> {
+) {
   const {
-    rows: [row],
-  } = await db.query<{ success: boolean }>(SQL`
+    rows: [result],
+  } = await db.query<UpdateResult>(SQL`
     WITH inserted_fs_state AS (
       -- Ideally, we would validate "existing.weight_brackets" against the
       -- weight brackets associated with "latest"
@@ -64,26 +53,14 @@ export async function updateFeeSchedule(
       inserted_fs_state.id,
       lower_bound,
       fee
-    FROM jsonb_to_recordset(${JSON.stringify(update.weight_brackets)}) AS update
-    (
+    FROM jsonb_to_recordset(${JSON.stringify(
+      update.weight_brackets
+    )}) AS update (
       lower_bound numeric(11,2),
       fee numeric(11,2)
     )
     CROSS JOIN inserted_fs_state
     RETURNING true AS success
   `);
-  return row;
-}
-export async function httpUpdateFeeSchedule(
-  request: hapi.Request,
-  h: hapi.ResponseToolkit,
-  db: pg.Pool
-): Promise<hapi.ResponseObject> {
-  const result = await updateFeeSchedule(db, request.payload as FeeSchedule);
-  if (!result) {
-    return h
-      .response(`Unexpected: Missing result from fee schedule update.`)
-      .code(http.internalServerError);
-  }
-  return h.response(result);
+  return result;
 }
