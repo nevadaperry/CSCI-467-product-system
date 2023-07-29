@@ -2,10 +2,11 @@ import * as pg from 'pg';
 import SQL from 'pg-template-tag';
 import {
   CreateResult,
+  DeleteResult,
   Product,
   ProductFilters,
   UpdateResult,
-} from '../../structures/resource';
+} from '../../shared/resource';
 
 export async function createProduct(db: pg.Pool, product: Product) {
   const {
@@ -42,22 +43,18 @@ export async function readProduct(db: pg.Pool, id: number) {
   const {
     rows: [product],
   } = await db.query<Product>(SQL`
-    WITH latest AS (
-      SELECT *
-      FROM product_state
-      WHERE product_id = ${id}
-      ORDER BY timestamp DESC
-      LIMIT 1
-    )
     SELECT
+      product_id AS id,
       part_number,
       description,
       weight,
       picture_url,
       price,
       quantity
-    FROM latest
-    WHERE deleted = false
+    FROM product_state
+    WHERE product_id = ${id}
+      AND is_latest = true
+      AND deleted = false
   `);
   return product;
 }
@@ -71,61 +68,131 @@ export async function updateProduct(
   const {
     rows: [result],
   } = await db.query<UpdateResult>(SQL`
-    INSERT INTO product_state (
-      product_id,
-      part_number,
-      description,
-      weight,
-      picture_url,
-      price,
-      quantity,
-      deleted
-    )
-    SELECT
-      ${id},
-      ${update.part_number},
-      ${update.description},
-      ${update.weight},
-      ${update.picture_url},
-      ${update.price},
-      ${update.quantity},
-      ${update.deleted},
-    FROM (
-      SELECT *
+    WITH resource AS (
+      SELECT true AS exists
       FROM product_state
       WHERE product_id = ${id}
-      ORDER BY timestamp DESC
-      LIMIT 1
-    ) latest
-    WHERE latest.part_number = ${existing.part_number}
-      AND latest.description = ${existing.description}
-      AND latest.weight = ${existing.weight}
-      AND latest.picture_url = ${existing.picture_url}
-      AND latest.price = ${existing.price}
-      AND latest.quantity = ${existing.quantity}
-      AND latest.deleted = ${existing.deleted}
-    RETURNING true AS success
+        AND is_latest = true
+        AND deleted = false
+    ), unmarked AS (
+      UPDATE product_state
+      SET is_latest = false
+      WHERE product_id = ${id}
+        AND is_latest = true
+        AND deleted = false
+        AND part_number = ${existing.part_number}
+        AND description = ${existing.description}
+        AND weight = ${existing.weight}
+        AND picture_url = ${existing.picture_url}
+        AND price = ${existing.price}
+        AND quantity = ${existing.quantity}
+      RETURNING true AS success
+    ), updated AS (
+      INSERT INTO product_state (
+        product_id,
+        part_number,
+        description,
+        weight,
+        picture_url,
+        price,
+        quantity
+      )
+      SELECT
+        ${id},
+        ${update.part_number},
+        ${update.description},
+        ${update.weight},
+        ${update.picture_url},
+        ${update.price},
+        ${update.quantity},
+      FROM unmarked
+      RETURNING true AS success
+    )
+    SELECT
+      coalesce(resource.exists, false) as exists,
+      coalesce(updated.success, false) as success
+    FROM (SELECT) dummy_row
+    LEFT JOIN resource ON TRUE
+    LEFT JOIN unmarked ON TRUE
+    LEFT JOIN updated ON TRUE
+  `);
+  return result;
+}
+
+export async function deleteProduct(
+  db: pg.Pool,
+  id: number,
+  existing: Product
+) {
+  const {
+    rows: [result],
+  } = await db.query<DeleteResult>(SQL`
+    WITH resource AS (
+      SELECT true AS exists
+      FROM product_state
+      WHERE product_id = ${id}
+        AND is_latest = true
+        AND deleted = false
+    ), unmarked AS (
+      UPDATE product_state
+      SET is_latest = false
+      WHERE product_id = ${id}
+        AND is_latest = true
+        AND deleted = false
+        AND part_number = ${existing.part_number}
+        AND description = ${existing.description}
+        AND weight = ${existing.weight}
+        AND picture_url = ${existing.picture_url}
+        AND price = ${existing.price}
+        AND quantity = ${existing.quantity}
+      RETURNING true AS success
+    ), deleted AS (
+      INSERT INTO product_state (
+        product_id,
+        part_number,
+        description,
+        weight,
+        picture_url,
+        price,
+        quantity,
+        deleted
+      )
+      SELECT
+        ${id},
+        ${existing.part_number},
+        ${existing.description},
+        ${existing.weight},
+        ${existing.picture_url},
+        ${existing.price},
+        ${existing.quantity},
+        true
+      FROM unmarked
+      RETURNING true AS success
+    )
+    SELECT
+      coalesce(resource.exists, false) as exists,
+      coalesce(updated.success, false) as success
+    FROM (SELECT) dummy_row
+    LEFT JOIN resource ON TRUE
+    LEFT JOIN unmarked ON TRUE
+    LEFT JOIN updated ON TRUE
   `);
   return result;
 }
 
 export async function listProducts(db: pg.Pool, _filters: ProductFilters) {
   const { rows: products } = await db.query<Product>(SQL`
-    WITH latest AS (
-      SELECT DISTINCT ON (product_id)
-        *
-      FROM product_state
-      ORDER BY product_id, timestamp DESC
-    )
     SELECT
+      product_id AS id,
       part_number,
       description,
       weight,
       picture_url,
       price,
       quantity
-    FROM latest
-    WHERE deleted = false
+    FROM product_state
+    WHERE is_latest = true
+      AND deleted = false
   `);
   return products;
 }

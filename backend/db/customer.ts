@@ -4,8 +4,9 @@ import {
   CreateResult,
   Customer,
   CustomerFilters,
+  DeleteResult,
   UpdateResult,
-} from '../../structures/resource';
+} from '../../shared/resource';
 
 export async function createCustomer(db: pg.Pool, customer: Customer) {
   const {
@@ -23,9 +24,9 @@ export async function createCustomer(db: pg.Pool, customer: Customer) {
     SELECT
       new_customer.id,
       ${customer.name},
-      ${customer.email}
+      ${customer.email},
     FROM new_customer
-    RETURNING customer_id
+    RETURNING customer_id AS id
   `);
   return result;
 }
@@ -34,18 +35,14 @@ export async function readCustomer(db: pg.Pool, id: number) {
   const {
     rows: [customer],
   } = await db.query<Customer>(SQL`
-    WITH latest AS (
-      SELECT *
-      FROM customer_state
-      WHERE customer_id = ${id}
-      ORDER BY timestamp DESC
-      LIMIT 1
-    )
     SELECT
+      customer_id AS id,
       name,
       email
-    FROM latest
-    WHERE deleted = false
+    FROM customer_state
+    WHERE customer_id = ${id}
+      AND is_latest = true
+      AND deleted = false
   `);
   return customer;
 }
@@ -59,44 +56,103 @@ export async function updateCustomer(
   const {
     rows: [result],
   } = await db.query<UpdateResult>(SQL`
-    INSERT INTO customer_state (
-      customer_id,
-      name,
-      email,
-      deleted
-    )
-    SELECT
-      ${id},
-      ${update.name},
-      ${update.email},
-      ${update.deleted}
-    FROM (
-      SELECT *
+    WITH resource AS (
+      SELECT true AS exists
       FROM customer_state
       WHERE customer_id = ${id}
-      ORDER BY timestamp DESC
-      LIMIT 1
-    ) latest
-    WHERE latest.name = ${existing.name}
-      AND latest.email = ${existing.email}
-      AND latest.deleted = ${existing.deleted}
-    RETURNING true AS success
+        AND is_latest = true
+        AND deleted = false
+    ), unmarked AS (
+      UPDATE customer_state
+      SET is_latest = false
+      WHERE customer_id = ${id}
+        AND is_latest = true
+        AND deleted = false
+        AND name = ${existing.name}
+        AND email = ${existing.email}
+      RETURNING true AS success
+    ), updated AS (
+      INSERT INTO customer_state (
+        customer_id,
+        name,
+        email
+      )
+      SELECT
+        ${id},
+        ${update.name},
+        ${update.email}
+      FROM unmarked
+      RETURNING true AS success
+    )
+    SELECT
+      coalesce(resource.exists, false) as exists,
+      coalesce(updated.success, false) as success
+    FROM (SELECT) dummy_row
+    LEFT JOIN resource ON TRUE
+    LEFT JOIN unmarked ON TRUE
+    LEFT JOIN updated ON TRUE
+  `);
+  return result;
+}
+
+export async function deleteCustomer(
+  db: pg.Pool,
+  id: number,
+  existing: Customer
+) {
+  const {
+    rows: [result],
+  } = await db.query<DeleteResult>(SQL`
+    WITH resource AS (
+      SELECT true AS exists
+      FROM customer_state
+      WHERE customer_id = ${id}
+        AND is_latest = true
+        AND deleted = false
+    ), unmarked AS (
+      UPDATE customer_state
+      SET is_latest = false
+      WHERE customer_id = ${id}
+        AND is_latest = true
+        AND deleted = false
+        AND name = ${existing.name}
+        AND email = ${existing.email}
+      RETURNING true AS success
+    ), deleted AS (
+      INSERT INTO customer_state (
+        customer_id,
+        name,
+        email,
+        deleted
+      )
+      SELECT
+        ${id},
+        ${existing.name},
+        ${existing.email},
+        true
+      FROM unmarked
+      RETURNING true AS success
+    )
+    SELECT
+      coalesce(resource.exists, false) as exists,
+      coalesce(deleted.success, false) as success
+    FROM (SELECT) dummy_row
+    LEFT JOIN resource ON TRUE
+    LEFT JOIN unmarked ON TRUE
+    LEFT JOIN deleted ON TRUE
   `);
   return result;
 }
 
 export async function listCustomers(db: pg.Pool, _filters: CustomerFilters) {
   const { rows: customers } = await db.query<Customer>(SQL`
-    WITH latest AS (
-      SELECT DISTINCT ON (customer_id) *
-      FROM customer_state
-      ORDER BY timestamp DESC
-    )
     SELECT
+      customer_id AS id,
       name,
       email
-    FROM latest
-    WHERE deleted = false
+    FROM customer_state
+    WHERE is_latest = true
+      AND deleted = false
   `);
   return customers;
 }

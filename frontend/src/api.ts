@@ -3,13 +3,14 @@ import {
   CreateResult,
   Customer,
   CustomerFilters,
+  DeleteResult,
   FeeSchedule,
   Order,
   OrderFilters,
   Product,
   ProductFilters,
   UpdateResult,
-} from '../../structures/resource';
+} from '../../shared/resource';
 
 const apiUrl = {
   development: 'http://localhost:3001',
@@ -45,7 +46,11 @@ export async function updateProduct(
   );
 }
 export async function deleteProduct(id: number, existing: Product) {
-  return await updateProduct(id, existing, { ...existing, deleted: true });
+  return handleApiResponse(
+    await axios.put<DeleteResult>(`${apiUrl}/product/${id}/delete`, {
+      existing,
+    })
+  );
 }
 export async function listProducts(filters: ProductFilters) {
   return handleApiResponse(
@@ -76,7 +81,11 @@ export async function updateCustomer(
   );
 }
 export async function deleteCustomer(id: number, existing: Customer) {
-  return await updateCustomer(id, existing, { ...existing, deleted: true });
+  return handleApiResponse(
+    await axios.put<DeleteResult>(`${apiUrl}/customer/${id}/delete`, {
+      existing,
+    })
+  );
 }
 export async function listCustomers(filters: CustomerFilters) {
   return handleApiResponse(
@@ -103,7 +112,11 @@ export async function updateOrder(id: number, existing: Order, update: Order) {
   );
 }
 export async function deleteOrder(id: number, existing: Order) {
-  return await updateOrder(id, existing, { ...existing, deleted: true });
+  return handleApiResponse(
+    await axios.put<DeleteResult>(`${apiUrl}/order/${id}/delete`, {
+      existing,
+    })
+  );
 }
 export async function listOrders(filters: OrderFilters) {
   return handleApiResponse(
