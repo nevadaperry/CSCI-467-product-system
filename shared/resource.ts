@@ -61,3 +61,7 @@ export interface WeightBracket {
 export interface FeeSchedule {
   weight_brackets: WeightBracket[];
 }
+
+export interface Watermark {
+  legacy_pkey: number;
+}

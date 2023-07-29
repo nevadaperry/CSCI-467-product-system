@@ -15,13 +15,7 @@ import {
   updateCustomer,
   deleteCustomer,
 } from './db/customer';
-import {
-  createOrder,
-  listOrders,
-  readOrder,
-  updateOrder,
-  deleteOrder,
-} from './db/order';
+import { createOrder, listOrders, readOrder, updateOrder } from './db/order';
 import { generateWrappers } from './wrappers';
 
 export async function addRoutes(server: hapi.Server, db: pg.Pool) {
@@ -104,11 +98,12 @@ export async function addRoutes(server: hapi.Server, db: pg.Pool) {
     path: `${routePrefix}/order/{id}`,
     handler: wrapUpdate(updateOrder),
   });
-  server.route({
+  // TODO(nevada): Write deleteOrder()
+  /*server.route({
     method: 'PUT',
     path: `${routePrefix}/order/{id}/delete`,
     handler: wrapDelete(deleteOrder),
-  });
+  });*/
   server.route({
     method: 'GET',
     path: `${routePrefix}/order`,

@@ -196,4 +196,3 @@ export async function listProducts(db: pg.Pool, _filters: ProductFilters) {
   `);
   return products;
 }
-

@@ -111,13 +111,14 @@ export async function updateOrder(id: number, existing: Order, update: Order) {
     })
   );
 }
-export async function deleteOrder(id: number, existing: Order) {
+// TODO(nevada): Write deleteOrder on the backend
+/*export async function deleteOrder(id: number, existing: Order) {
   return handleApiResponse(
     await axios.put<DeleteResult>(`${apiUrl}/order/${id}/delete`, {
       existing,
     })
   );
-}
+}*/
 export async function listOrders(filters: OrderFilters) {
   return handleApiResponse(
     await axios.get<Order[]>(`${apiUrl}/order`, {

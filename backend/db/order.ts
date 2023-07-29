@@ -228,6 +228,8 @@ export async function updateOrder(
   return result;
 }
 
+// TODO(nevada): Write deleteOrder()
+
 export async function listOrders(db: pg.Pool, _filters: OrderFilters) {
   // TODO(nevada): Implement filtering
   const { rows: orders } = await db.query<Order>(SQL`

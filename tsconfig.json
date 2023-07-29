@@ -1,7 +1,9 @@
 {
   "ts-node": {
     "compilerOptions": {
-      "module": "commonjs"
+      "module": "commonjs",
+      "allowJs": true,
+      "checkJs": false
     }
   },
   "compilerOptions": {
@@ -21,7 +23,7 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "extensions": ["ts"],
-  "include": ["/**/*.ts"],
+  "extensions": ["ts", "js"],
+  "include": ["/**/*.ts", "backend/agendash-fork/lib/controllers/agendash.js"],
   "exclude": ["node_modules"]
 }
