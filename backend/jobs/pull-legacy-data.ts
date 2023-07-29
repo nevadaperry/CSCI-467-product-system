@@ -21,7 +21,7 @@ export async function pullLegacyData(db: pg.Pool) {
       description,
       price,
       weight,
-      "pictureURL"
+      pictureURL AS picture_url
     FROM csci467.parts
     WHERE number > ${watermark.legacy_pkey}
     ORDER BY number ASC
@@ -30,7 +30,7 @@ export async function pullLegacyData(db: pg.Pool) {
     description: any;
     price: any;
     weight: any;
-    pictureURL: any;
+    picture_url: any;
   }[];
 
   for (const newProduct of newProducts) {
@@ -39,7 +39,7 @@ export async function pullLegacyData(db: pg.Pool) {
         part_number: newProduct.number,
         description: newProduct.description,
         weight: newProduct.weight,
-        picture_url: newProduct.pictureURL,
+        picture_url: newProduct.picture_url,
         price: newProduct.price,
         quantity: 0,
       });

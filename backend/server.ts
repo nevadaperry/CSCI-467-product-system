@@ -16,8 +16,7 @@ import { pullLegacyData } from './jobs/pull-legacy-data';
     host: '0.0.0.0',
     routes: {
       cors: {
-        // localhost is always trusted
-        origin: ['product-system-frontend.onrender.com'],
+        origin: ['https://product-system-frontend.onrender.com'],
       },
     },
   });
@@ -53,6 +52,7 @@ async function connectToPostgres() {
 }
 
 async function startAgenda(db: pg.Pool) {
+  // Stored in Render or can be supplied locally
   if (!process.env.MONGO_PASSWORD) {
     console.warn(
       `Missing env var MONGO_PASSWORD. Agenda jobs will not be run (this is fine for development).`
