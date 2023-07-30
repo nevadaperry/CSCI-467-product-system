@@ -53,7 +53,7 @@ export async function addRoutes(server: hapi.Server, db: pg.Pool) {
   });
   server.route({
     method: 'GET',
-    path: `${routePrefix}/product`,
+    path: `${routePrefix}/product-list`,
     handler: wrapList(listProducts),
   });
 
@@ -79,7 +79,7 @@ export async function addRoutes(server: hapi.Server, db: pg.Pool) {
   });
   server.route({
     method: 'GET',
-    path: `${routePrefix}/customer`,
+    path: `${routePrefix}/customer-list`,
     handler: wrapList(listCustomers),
   });
 
@@ -106,7 +106,7 @@ export async function addRoutes(server: hapi.Server, db: pg.Pool) {
   });*/
   server.route({
     method: 'GET',
-    path: `${routePrefix}/order`,
+    path: `${routePrefix}/order-list`,
     handler: wrapList(listOrders),
   });
 

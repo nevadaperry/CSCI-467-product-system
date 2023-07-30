@@ -13,11 +13,28 @@
   margin-bottom: 1em !important;
 }
 
-.ps-cell {
-  display: flex;
+.ps-flex {
+  display: flex !important;
 }
 
+.ps-cell {
+  padding: 0.5rem 0.5rem;
+  white-space: nowrap !important;
+}
 .ps-cell * {
-  align-self: center;
-  white-space: nowrap;
+  float: left !important;
+}
+.ps-cell img {
+  padding: 0 !important;
+}
+
+.ps-left {
+  text-align: left !important;
+}
+.ps-right {
+  text-align: right !important;
+}
+
+.ps-input {
+  width: auto !important;
 }

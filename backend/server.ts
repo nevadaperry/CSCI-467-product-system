@@ -16,16 +16,21 @@ import { pullLegacyData } from './jobs/pull-legacy-data';
     host: '0.0.0.0',
     routes: {
       cors: {
-        origin: ['https://product-system-frontend.onrender.com'],
+        origin: [
+          'http://localhost:3000',
+          'https://product-system-frontend.onrender.com',
+        ],
       },
     },
   });
   await server.register(inert);
-  await server.register(
-    Agendash(agenda, {
-      middleware: 'hapi',
-    })
-  );
+  if (agenda) {
+    await server.register(
+      Agendash(agenda, {
+        middleware: 'hapi',
+      })
+    );
+  }
 
   await addRoutes(server, db);
 

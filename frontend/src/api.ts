@@ -21,7 +21,7 @@ if (!apiUrl) {
   throw new Error(`Unexpected NODE_ENV: ${process.env.NODE_ENV}`);
 }
 
-function handleApiResponse(response: AxiosResponse) {
+function handleApiResponse<T>(response: AxiosResponse<T>) {
   return response.data;
 }
 
@@ -54,7 +54,7 @@ export async function deleteProduct(id: number, existing: Product) {
 }
 export async function listProducts(filters: ProductFilters) {
   return handleApiResponse(
-    await axios.get<Product[]>(`${apiUrl}/product`, { params: filters })
+    await axios.get<Product[]>(`${apiUrl}/product-list`, { params: filters })
   );
 }
 
@@ -89,7 +89,7 @@ export async function deleteCustomer(id: number, existing: Customer) {
 }
 export async function listCustomers(filters: CustomerFilters) {
   return handleApiResponse(
-    await axios.get<Customer[]>(`${apiUrl}/customer`, {
+    await axios.get<Customer[]>(`${apiUrl}/customer-list`, {
       params: filters,
     })
   );
@@ -121,7 +121,7 @@ export async function updateOrder(id: number, existing: Order, update: Order) {
 }*/
 export async function listOrders(filters: OrderFilters) {
   return handleApiResponse(
-    await axios.get<Order[]>(`${apiUrl}/order`, {
+    await axios.get<Order[]>(`${apiUrl}/order-list`, {
       params: filters,
     })
   );
