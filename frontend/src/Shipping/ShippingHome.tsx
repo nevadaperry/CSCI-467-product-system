@@ -4,7 +4,7 @@ export default function ShippingHome() {
   return (
     <div>
       <header>
-        <h1>Shipping</h1>
+        <h2>Shipping</h2>
       </header>
     </div>
   );

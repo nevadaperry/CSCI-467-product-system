@@ -24,12 +24,14 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <BrowserRouter>
-    <div className="container">
+    <div className="container ps-outermost">
       <Nav className="ps-nav" pills>
         <NavItem>
           <NavLink tag={RouterNavLink} to="/">
-            <FontAwesomeIcon icon={faGaugeHigh} />
-            &nbsp;Product System
+            <span className="ps-bold">
+              <FontAwesomeIcon icon={faGaugeHigh} />
+              &nbsp;Product System
+            </span>
           </NavLink>
         </NavItem>
         <NavItem>

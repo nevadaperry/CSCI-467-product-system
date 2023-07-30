@@ -4,37 +4,54 @@
   --bs-link-color: white !important;
   --bs-link-hover-color: #75b798 !important;
 }
-
 .nav-pills {
   --bs-nav-pills-link-active-bg: #198754 !important;
 }
-
+.ps-outermost {
+  margin-left: 0rem !important;
+  margin-right: 0rem !important;
+  max-width: 100% !important;
+}
 .ps-nav {
   margin-bottom: 1em !important;
+  width: auto !important;
+  flex-wrap: nowrap !important;
 }
-
 .ps-flex {
   display: flex !important;
-}
-
-.ps-cell {
-  padding: 0.5rem 0.5rem;
+  float: left !important;
   white-space: nowrap !important;
 }
-.ps-cell * {
+.ps-inline-flex {
+  display: inline-flex !important;
+  text-align: center !important;
+  align-items: center !important;
+  white-space: nowrap !important;
   float: left !important;
+}
+.ps-personal-space {
+  margin-right: 0.5rem !important;
+}
+.ps-cell {
+  padding: 0.5rem 0.5rem !important;
+  white-space: nowrap !important;
 }
 .ps-cell img {
   padding: 0 !important;
 }
-
 .ps-left {
   text-align: left !important;
 }
 .ps-right {
   text-align: right !important;
 }
-
 .ps-input {
-  width: auto !important;
+  min-width: 5rem !important;
+}
+.ps-bold {
+  font-weight: bold !important;
+  white-space: nowrap !important;
+}
+header {
+  margin-left: 0.5rem !important;
 }

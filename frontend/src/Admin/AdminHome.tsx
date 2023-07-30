@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ShippingAndHandlingSettings from './ShippingAndHandlingSettings';
+import FeeSchedule from './FeeSchedule';
 import OrderListing from './OrderListing';
 import OrderSearch from './OrderSearch';
 import OrderDetails from './OrderDetails';
@@ -23,29 +23,30 @@ function AdminHome() {
   return (
     <div>
       <header>
-        <h1>Admin Interface</h1>
+        <h2>Admin</h2>
         {/* Two Buttons for Shipping Cost and Orders */}
         <div className="header-buttons">
           <Button
-            className="header-button"
-            color={currentSection === Section.ORDERS ? 'primary' : 'secondary'}
+            className="header-button ps-personal-space"
+            color={currentSection === Section.ORDERS ? 'success' : 'secondary'}
             onClick={() => setCurrentSection(Section.ORDERS)}
           >
             Orders
           </Button>
           <Button
-            className="header-button"
+            className="header-button ps-personal-space"
             color={
-              currentSection === Section.SHIPPING ? 'primary' : 'secondary'
+              currentSection === Section.SHIPPING ? 'success' : 'secondary'
             }
             onClick={() => setCurrentSection(Section.SHIPPING)}
           >
-            Shipping Cost
+            Fee schedule
           </Button>
         </div>
       </header>
+      &nbsp;
       {currentSection === Section.SHIPPING ? (
-        <ShippingAndHandlingSettings />
+        <FeeSchedule />
       ) : (
         <>
           <OrderListing />
@@ -53,6 +54,7 @@ function AdminHome() {
           <OrderDetails />
         </>
       )}
+      <footer>&nbsp;</footer>
     </div>
   );
 }

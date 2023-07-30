@@ -35,6 +35,7 @@ CREATE UNIQUE INDEX product_state_part_number__where__is_latest ON product_state
 CREATE UNIQUE INDEX product_state_product_id__where__is_latest ON product_state (product_id) WHERE is_latest;
 
 
+
 CREATE TABLE customer (
   id bigserial PRIMARY KEY
 );
@@ -53,6 +54,7 @@ CREATE INDEX customer_state_customer_id_is_latest ON customer_state (customer_id
 CREATE UNIQUE INDEX customer_state_email__where__is_latest ON customer_state (email) WHERE is_latest;
 -- Only allow one state per customer to have is_latest = true
 CREATE UNIQUE INDEX customer_state_customer_id__where__is_latest ON customer_state (customer_id) WHERE is_latest;
+
 
 
 CREATE TYPE order_status AS ENUM('authorized', 'shipped');
@@ -80,9 +82,11 @@ CREATE INDEX order_state_order_id_timestamp ON order_state (order_id, timestamp)
 CREATE INDEX order_state_order_id_is_latest ON order_state (order_id, is_latest);
 -- Only allow one state per order to have is_latest = true
 CREATE UNIQUE INDEX order_state_order_id__where__is_latest ON order_state (order_id) WHERE is_latest;
+-- Search filters
 CREATE INDEX order_state_is_latest_status ON order_state (is_latest, status);
 CREATE INDEX order_state_is_latest_total_price ON order_state (is_latest, total_price);
 CREATE INDEX order_state_is_latest_date_placed ON order_state (is_latest, date_placed);
+
 CREATE TABLE order_state_line_item (
   id bigserial PRIMARY KEY,
   order_state_id bigint NOT NULL REFERENCES order_state(id) ON DELETE RESTRICT,
@@ -90,6 +94,7 @@ CREATE TABLE order_state_line_item (
   quantity bigint NOT NULL
 );
 CREATE INDEX order_state_line_item_order_state_id ON order_state_line_item (order_state_id);
+
 
 
 -- This table maintains the existence of a single global "fee schedule"
@@ -100,6 +105,9 @@ CREATE TABLE fee_schedule_state (
 );
 CREATE INDEX fee_schedule_state_timestamp ON fee_schedule_state (timestamp);
 CREATE INDEX fee_schedule_state_is_latest ON fee_schedule_state (is_latest);
+-- Only allow one fee_schedule_state to have is_latest = true
+CREATE UNIQUE INDEX fee_schedule_state__where__is_latest ON fee_schedule_state (is_latest) WHERE is_latest; 
+
 CREATE TABLE weight_bracket (
   id bigserial PRIMARY KEY,
   fee_schedule_state_id bigint NOT NULL REFERENCES fee_schedule_state(id) ON DELETE RESTRICT,
@@ -109,6 +117,7 @@ CREATE TABLE weight_bracket (
 CREATE INDEX weight_bracket_fee_schedule_state_id_lower_bound ON weight_bracket (fee_schedule_state_id, lower_bound);
 
 
+
 -- This table maintains the existence of a single global "watermark"
 CREATE TABLE watermark_state (
   id bigserial PRIMARY KEY,
@@ -116,6 +125,7 @@ CREATE TABLE watermark_state (
   is_latest boolean NOT NULL DEFAULT true,
   legacy_pkey bigint NOT NULL
 );
--- Constraints are unnecessary here because the application logic is idempotent
 CREATE INDEX watermark_state_timestamp ON watermark_state (timestamp);
 CREATE INDEX watermark_state_is_latest ON watermark_state (is_latest);
+-- Only allow one watermark_state to have is_latest = true
+CREATE UNIQUE INDEX watermark_state__where__is_latest ON watermark_state (is_latest) WHERE is_latest;

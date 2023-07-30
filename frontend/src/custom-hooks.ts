@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface LoadState {
   status?: 'loading' | 'finished' | 'errored';
@@ -6,12 +6,9 @@ export interface LoadState {
 }
 
 export function useLoad<T>(
-  loader: (...args: any[]) => Promise<T>,
-  args: any[]
+  loader: () => Promise<T>,
+  ordinal: number
 ): [T | undefined, LoadState] {
-  const loaderMemo = useMemo(() => loader, [loader]);
-  const argsMemo = useMemo(() => args, [args]);
-
   const [resource, setResource] = useState<T>();
   const [resourceLoad, setResourceLoad] = useState<LoadState>({
     status: 'loading',
@@ -19,13 +16,15 @@ export function useLoad<T>(
   useEffect(() => {
     (async () => {
       try {
-        setResource(await loaderMemo(...argsMemo));
+        console.log('trying to load');
+        setResource(await loader());
         setResourceLoad({ status: 'finished' });
       } catch (e) {
         setResourceLoad({ status: 'errored', error: e });
       }
     })();
-  }, [loaderMemo, argsMemo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ordinal]);
 
   return [resource, resourceLoad];
 }

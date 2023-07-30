@@ -12,8 +12,12 @@ export async function readFeeSchedule(db: pg.Pool, _id: number) {
         'fee', wb.fee
       )), '[]'::jsonb) AS weight_brackets
     FROM fee_schedule_state fss
-    JOIN weight_bracket wb
-      ON wb.fee_schedule_state_id = fss.id
+    CROSS JOIN LATERAL (
+      SELECT *
+      FROM weight_bracket wb
+      WHERE wb.fee_schedule_state_id = fss.id
+      ORDER BY wb.lower_bound ASC
+    ) wb
     WHERE fss.is_latest = true
   `);
   return feeSchedule;

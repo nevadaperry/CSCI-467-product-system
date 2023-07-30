@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <div>
       <header>
-        <h1>Welcome to Product System!</h1>
+        <h2>Welcome to Product System!</h2>
         <p>
           <span className="badge bg-success">
             Your source for all things automotive.

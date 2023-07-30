@@ -4,11 +4,13 @@ import * as api from '../api';
 import { useLoad } from '../custom-hooks';
 
 function CustomerHome() {
-  const [products, productsLoad] = useLoad(api.listProducts, [{}]);
+  const [products, productsLoad] = useLoad(() => api.listProducts({}), 0);
 
   return (
     <div>
-      <h1>Customer</h1>
+      <header>
+        <h2>Customer</h2>
+      </header>
       {(productsLoad.status === 'loading' && <Spinner />) || (
         <Table className="ps-no-break">
           <thead>
@@ -30,13 +32,12 @@ function CustomerHome() {
               <td className="ps-cell ps-left">{product.description}</td>
               <td className="ps-cell ps-right">{product.weight} lb</td>
               <td className="ps-cell ps-right">${product.price}</td>
-              <td className="ps-cell ps-right">
-                {product.quantity} left in stock
+              <td className="ps-cell ps-right">{product.quantity} in stock</td>
+              <td className="ps-cell ps-left">Qty:</td>
+              <td className="ps-cell ps-left">
+                <Input type="number" value="1" className="ps-input" />
               </td>
               <td className="ps-cell ps-left">
-                <span>Qty:</span>
-                <Input type="number" value="1" className="ps-input w-25" />
-                <span></span>
                 <Button className="ps-input" color="success">
                   Add to cart
                 </Button>
