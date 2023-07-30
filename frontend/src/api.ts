@@ -13,8 +13,8 @@ import {
 } from '../../shared/resource';
 
 const apiUrl = {
-  development: 'http://localhost:3001',
-  test: 'http://localhost:3001',
+  development: 'http://localhost:4000',
+  test: 'http://localhost:4000',
   production: 'https://product-system.onrender.com',
 }[process.env.NODE_ENV!];
 if (!apiUrl) {

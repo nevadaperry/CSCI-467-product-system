@@ -12,15 +12,15 @@ import { pullLegacyData } from './jobs/pull-legacy-data';
 
   console.log(`Starting Hapi server`);
   const server = hapi.server({
-    port: process.env.PORT ?? 3001,
+    port: process.env.PORT ?? 4000,
     host: '0.0.0.0',
     routes: {
       cors: {
-        origin: [
-          'http://localhost:3000',
-          'https://product-system-frontend.onrender.com',
-        ],
+        origin: ['*'],
       },
+    },
+    debug: {
+      request: '*',
     },
   });
   await server.register(inert);
