@@ -25,9 +25,9 @@ export async function createOrder(db: pg.Pool, order: Order) {
           product_id bigint,
           quantity bigint
         )
-      JOIN product_state
+      JOIN product_state ps
         ON line_item.product_id = ps.product_id
-        AND ps.is_active = true
+        AND ps.is_latest = true
         AND ps.deleted = false
     ), stats_2 AS (
       SELECT
@@ -36,9 +36,8 @@ export async function createOrder(db: pg.Pool, order: Order) {
       CROSS JOIN LATERAL (
         SELECT wb.fee
         FROM fee_schedule_state fss
-        JOIN weight_bracket wb ON wb.fee_schedule_state_id = efss.id
+        JOIN weight_bracket wb ON wb.fee_schedule_state_id = fss.id
         WHERE fss.is_latest = true
-          AND fss.deleted = false
           AND wb.lower_bound < stats_1.total_weight
         ORDER BY wb.lower_bound DESC
         LIMIT 1
@@ -83,10 +82,8 @@ export async function createOrder(db: pg.Pool, order: Order) {
       RETURNING true AS success
     )
     SELECT new_order_state.order_id AS id
-    FROM (SELECT) dummy_row
-    LEFT JOIN resource ON TRUE
-    LEFT JOIN unmarked ON TRUE
-    LEFT JOIN new_order_state updated ON TRUE
+    FROM new_order
+    LEFT JOIN new_order_state ON TRUE
     LEFT JOIN associated_line_item ON TRUE
   `);
   return result;
@@ -96,6 +93,44 @@ export async function readOrder(db: pg.Pool, id: number) {
   const {
     rows: [order],
   } = await db.query<Order>(SQL`
+    WITH stats_1 AS (
+      SELECT
+        coalesce(jsonb_agg(jsonb_build_object(
+          'product_id', osli.product_id,
+          'quantity', osli.quantity,
+          'product', jsonb_build_object(
+            'id', ps.product_id,
+            'part_number', ps.part_number,
+            'description', ps.description,
+            'weight', ps.weight,
+            'picture_url', ps.picture_url,
+            'price', ps.price,
+            'quantity', ps.quantity
+          )
+        )), '[]'::jsonb) AS line_items,
+        coalesce(sum(ps.price * osli.quantity), 0) as subtotal,
+        coalesce(sum(ps.weight * osli.quantity), 0) as total_weight
+      FROM order_state os
+      LEFT JOIN order_state_line_item osli ON osli.order_state_id = os.id
+      LEFT JOIN product_state ps
+        ON osli.product_id = ps.product_id
+        AND ps.is_latest = true
+        AND ps.deleted = false
+      WHERE os.order_id = ${id}
+    ), stats_2 AS (
+      SELECT
+        stats_1.subtotal + weight_bracket_of_order.fee AS total_price
+      FROM stats_1
+      CROSS JOIN LATERAL (
+        SELECT wb.fee
+        FROM fee_schedule_state fss
+        JOIN weight_bracket wb ON wb.fee_schedule_state_id = fss.id
+        WHERE fss.is_latest = true
+          AND wb.lower_bound < stats_1.total_weight
+        ORDER BY wb.lower_bound DESC
+        LIMIT 1
+      ) weight_bracket_of_order
+    )
     SELECT
       o.id,
       o.customer_id,
@@ -104,18 +139,12 @@ export async function readOrder(db: pg.Pool, id: number) {
       os.shipping_address,
       os.status,
       os.date_placed,
-      coalesce(line_items, '[]'::jsonb) as line_items
+      stats_1.line_items,
+      stats_2.total_price
     FROM order_state os
     JOIN "order" o ON os.order_id = o.id
-    LEFT JOIN LATERAL (
-      SELECT
-        jsonb_agg(jsonb_build_object(
-          'product_id', osli.product_id,
-          'quantity', osli.quantity
-        )) AS line_items
-      FROM order_state_line_item osli
-      WHERE osli.order_state_id = os.id
-    ) line_item_agg ON TRUE
+    CROSS JOIN stats_1
+    CROSS JOIN stats_2
     WHERE os.order_id = ${id}
       AND os.is_latest = true
       AND os.deleted = false
@@ -162,7 +191,7 @@ export async function updateOrder(
         )
       JOIN product_state
         ON line_item.product_id = ps.product_id
-        AND ps.is_active = true
+        AND ps.is_latest = true
         AND ps.deleted = false
     ), stats_2 AS (
       SELECT

@@ -7,7 +7,11 @@ export interface LoadState {
 
 export function useLoad<T>(
   loader: () => Promise<T>,
-  ordinal: number
+  /**
+   * If you specify this, useLoad will re-run each time the trigger number
+   * changes.
+   */
+  trigger?: number
 ): [T | undefined, LoadState] {
   const [resource, setResource] = useState<T>();
   const [resourceLoad, setResourceLoad] = useState<LoadState>({
@@ -16,15 +20,16 @@ export function useLoad<T>(
   useEffect(() => {
     (async () => {
       try {
-        console.log('trying to load');
         setResource(await loader());
         setResourceLoad({ status: 'finished' });
       } catch (e) {
         setResourceLoad({ status: 'errored', error: e });
+        // Escalate the error so React can show it to the user immediately
+        throw e;
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ordinal]);
+  }, [trigger]);
 
   return [resource, resourceLoad];
 }

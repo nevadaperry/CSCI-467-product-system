@@ -31,6 +31,10 @@ export interface CustomerFilters {}
 export interface OrderLineItem {
   product_id: number;
   quantity: number;
+  /**
+   * This is returned by API read calls for convenience.
+   */
+  product?: Product;
 }
 export type OrderStatus = 'authorized' | 'shipped';
 export interface Order {
@@ -42,9 +46,14 @@ export interface Order {
   status: OrderStatus;
   line_items: OrderLineItem[];
   /**
-   * This is set by the db when the resource is created.
+   * This is set by the db when the resource is created, and returned by API
+   * read calls for convenience.
    */
   date_placed?: Date;
+  /**
+   * This is returned by API read calls for convenience.
+   */
+  total_price?: number;
 }
 export interface OrderFilters {
   date_lower_bound: Date;
