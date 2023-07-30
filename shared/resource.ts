@@ -32,7 +32,7 @@ export interface OrderLineItem {
   product_id: number;
   quantity: number;
   /**
-   * This is returned by API read calls for convenience.
+   * This is returned by API read responses for convenience.
    */
   product?: Product;
 }
@@ -40,18 +40,37 @@ export type OrderStatus = 'authorized' | 'shipped';
 export interface Order {
   id?: number;
   customer_id: number;
-  auth_number: string;
-  cc_last_four: string;
   shipping_address: string;
-  status: OrderStatus;
   line_items: OrderLineItem[];
   /**
+   * This must be provided by the frontend on create requests.
+   */
+  cc_full?: {
+    digits: string;
+    exp: string;
+    cvv: string;
+  };
+  /**
+   * This is set by the backend to 'authorized' if payment processing
+   * succeeds, and returned by API read responses.
+   */
+  status?: OrderStatus;
+  /**
+   * This is set by the backend if payment processing succeeds, and returned by
+   * API read responses.
+   */
+  auth_number: string;
+  /**
+   * This is returned by API read responses.
+   */
+  cc_last_four: string;
+  /**
    * This is set by the db when the resource is created, and returned by API
-   * read calls for convenience.
+   * read responses for convenience.
    */
   date_placed?: Date;
   /**
-   * This is returned by API read calls for convenience.
+   * This is returned by API read responses for convenience.
    */
   total_price?: number;
 }

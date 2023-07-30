@@ -55,9 +55,9 @@ export async function createOrder(db: pg.Pool, order: Order) {
       SELECT
         new_order.id,
         ${order.auth_number},
-        ${order.cc_last_four},
+        ${order.cc_full!.digits.slice(-4)},
         ${order.shipping_address},
-        ${order.status},
+        'authorized',
         now(),
         stats_2.total_price
       FROM new_order
@@ -262,26 +262,62 @@ export async function updateOrder(
 export async function listOrders(db: pg.Pool, _filters: OrderFilters) {
   // TODO(nevada): Implement filtering
   const { rows: orders } = await db.query<Order>(SQL`
-    SELECT
-      order_id AS id,
-      auth_number,
-      cc_last_four,
-      shipping_address,
-      status,
-      date_placed,
-      coalesce(line_items, '[]'::jsonb) AS line_items
-    FROM order_state
-    LEFT JOIN LATERAL (
+    WITH stats_1 AS (
       SELECT
-        jsonb_agg(jsonb_build_object(
+        os.order_id,
+        coalesce(jsonb_agg(jsonb_build_object(
           'product_id', osli.product_id,
-          'quantity', osli.quantity
-        )) AS line_items
-      FROM order_state_line_item osli
-      WHERE osli.order_state_id = order_state.id
-    ) line_item_agg ON TRUE
-    WHERE is_latest = true
-      AND deleted = false
+          'quantity', osli.quantity,
+          'product', jsonb_build_object(
+            'id', ps.product_id,
+            'part_number', ps.part_number,
+            'description', ps.description,
+            'weight', ps.weight,
+            'picture_url', ps.picture_url,
+            'price', ps.price,
+            'quantity', ps.quantity
+          )
+        )), '[]'::jsonb) AS line_items,
+        coalesce(sum(ps.price * osli.quantity), 0) as subtotal,
+        coalesce(sum(ps.weight * osli.quantity), 0) as total_weight
+      FROM order_state os
+      LEFT JOIN order_state_line_item osli ON osli.order_state_id = os.id
+      LEFT JOIN product_state ps
+        ON osli.product_id = ps.product_id
+        AND ps.is_latest = true
+        AND ps.deleted = false
+      GROUP BY 1
+    ), stats_2 AS (
+      SELECT
+        stats_1.order_id,
+        stats_1.subtotal + weight_bracket_of_order.fee AS total_price
+      FROM stats_1
+      CROSS JOIN LATERAL (
+        SELECT wb.fee
+        FROM fee_schedule_state fss
+        JOIN weight_bracket wb ON wb.fee_schedule_state_id = fss.id
+        WHERE fss.is_latest = true
+          AND wb.lower_bound < stats_1.total_weight
+        ORDER BY wb.lower_bound DESC
+        LIMIT 1
+      ) weight_bracket_of_order
+    )
+    SELECT
+      o.id,
+      o.customer_id,
+      os.auth_number,
+      os.cc_last_four,
+      os.shipping_address,
+      os.status,
+      os.date_placed,
+      stats_1.line_items,
+      stats_2.total_price
+    FROM order_state os
+    JOIN "order" o ON os.order_id = o.id
+    JOIN stats_1 ON stats_1.order_id = o.id
+    JOIN stats_2 ON stats_2.order_id = o.id
+    WHERE os.is_latest = true
+      AND os.deleted = false
   `);
   return orders;
 }
