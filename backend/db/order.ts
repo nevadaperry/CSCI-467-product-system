@@ -6,11 +6,30 @@ import {
   OrderFilters,
   UpdateResult,
 } from '../../shared/resource';
+import axios from 'axios';
+
+function validateOrder(order: Order) {
+  if (!order) throw new Error(`Missing entire order`);
+  if (!order.customer_id) throw new Error(`Missing customer_id`);
+  if (!order.shipping_address) throw new Error(`Missing shipping_address`);
+  if ((order.line_items?.length ?? 0) === 0)
+    throw new Error(`Missing line_items`);
+  if (!order.cc_full?.digits) throw new Error(`Missing cc_full.digits`);
+  if (!order.cc_full?.exp) throw new Error(`Missing cc_full.exp`);
+  if (!order.cc_full?.cvv) throw new Error(`Missing cc_full.cvv`);
+  if (!order.cc_full?.cardholder_name)
+    throw new Error(`Missing cc_full.cardholder_name`);
+}
 
 export async function createOrder(db: pg.Pool, order: Order) {
+  validateOrder(order);
+
   const {
-    rows: [result],
-  } = await db.query<CreateResult>(SQL`
+    rows: [orderMeta],
+  } = await db.query<{
+    id: number;
+    total_price: number;
+  }>(SQL`
     WITH new_order AS (
       INSERT INTO "order" (customer_id)
       VALUES (${order.customer_id})
@@ -42,26 +61,51 @@ export async function createOrder(db: pg.Pool, order: Order) {
         ORDER BY wb.lower_bound DESC
         LIMIT 1
       ) weight_bracket_of_order
-    ), new_order_state AS (
+    )
+    SELECT
+      new_order.id,
+      stats_2.total_price
+    FROM new_order
+    CROSS JOIN stats_1
+    CROSS JOIN stats_2
+  `);
+
+  const { data: paymentResult } = await axios.post<{
+    brand: string;
+    authorization: string;
+    timeStamp: number;
+    _id: string;
+  }>(`http://blitz.cs.niu.edu/CreditCard/`, {
+    vendor: 'VE762-33',
+    trans: orderMeta.id,
+    amount: orderMeta.total_price,
+    cc: order.cc_full!.digits,
+    name: order.cc_full!.cardholder_name,
+    exp: order.cc_full!.exp,
+  });
+
+  const {
+    rows: [finalResult],
+  } = await db.query<CreateResult>(SQL`
+    WITH new_order_state AS (
       INSERT INTO order_state (
         order_id,
+        total_price,
         auth_number,
         cc_last_four,
         shipping_address,
         status,
-        date_placed,
-        total_price
+        date_placed
       )
-      SELECT
-        new_order.id,
-        ${order.auth_number},
+      VALUES (
+        ${orderMeta.id},
+        ${orderMeta.total_price},
+        ${paymentResult.authorization},
         ${order.cc_full!.digits.slice(-4)},
         ${order.shipping_address},
         'authorized',
-        now(),
-        stats_2.total_price
-      FROM new_order
-      CROSS JOIN stats_2
+        to_timestamp(${paymentResult.timeStamp})
+      )
       RETURNING id, order_id
     ), associated_line_item AS (
       INSERT INTO order_state_line_item (
@@ -81,12 +125,11 @@ export async function createOrder(db: pg.Pool, order: Order) {
         )
       RETURNING true AS success
     )
-    SELECT new_order_state.order_id AS id
-    FROM new_order
-    LEFT JOIN new_order_state ON TRUE
+    SELECT order_id AS id
+    FROM new_order_state
     LEFT JOIN associated_line_item ON TRUE
   `);
-  return result;
+  return finalResult;
 }
 
 export async function readOrder(db: pg.Pool, id: number) {

@@ -6,22 +6,31 @@ import { Agenda } from 'agenda';
 const Agendash = require('agendash');
 import { pullLegacyData } from './jobs/pull-legacy-data';
 
+const BACKEND_PORT_LOCAL_ONLY = 4000;
+
 (async () => {
   const db = await connectToPostgres();
   const agenda = await startAgenda(db);
 
   console.log(`Starting Hapi server`);
   const server = hapi.server({
-    port: process.env.PORT ?? 4000,
+    port: process.env.PORT ?? BACKEND_PORT_LOCAL_ONLY,
     host: '0.0.0.0',
     routes: {
       cors: {
         origin: ['*'],
       },
     },
-    debug: {
-      request: '*',
-    },
+  });
+  server.ext('onRequest', (request, h) => {
+    console.log(
+      `Received request ${request.method.toUpperCase()} ${request.url}${
+        ['post', 'put'].includes(request.method)
+          ? ` payload ${JSON.stringify(request.payload)}`
+          : ''
+      }`
+    );
+    return h.continue;
   });
   await server.register(inert);
   if (agenda) {
@@ -31,9 +40,7 @@ import { pullLegacyData } from './jobs/pull-legacy-data';
       })
     );
   }
-
   await addRoutes(server, db);
-
   await server.start();
   console.log(`Server running on ${server.info.uri}`);
 })();

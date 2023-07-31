@@ -12,9 +12,11 @@ import {
   UpdateResult,
 } from '../../shared/resource';
 
+const BACKEND_PORT_LOCAL_ONLY = 4000;
+
 const apiUrl = {
-  development: 'http://localhost:4000',
-  test: 'http://localhost:4000',
+  development: `http://localhost:${BACKEND_PORT_LOCAL_ONLY}`,
+  test: `http://localhost:${BACKEND_PORT_LOCAL_ONLY}`,
   production: 'https://product-system.onrender.com',
 }[process.env.NODE_ENV!];
 if (!apiUrl) {

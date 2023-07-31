@@ -49,6 +49,7 @@ export interface Order {
     digits: string;
     exp: string;
     cvv: string;
+    cardholder_name: string;
   };
   /**
    * This is set by the backend to 'authorized' if payment processing
@@ -59,11 +60,11 @@ export interface Order {
    * This is set by the backend if payment processing succeeds, and returned by
    * API read responses.
    */
-  auth_number: string;
+  auth_number?: string;
   /**
    * This is returned by API read responses.
    */
-  cc_last_four: string;
+  cc_last_four?: string;
   /**
    * This is set by the db when the resource is created, and returned by API
    * read responses for convenience.
@@ -75,11 +76,11 @@ export interface Order {
   total_price?: number;
 }
 export interface OrderFilters {
-  date_lower_bound: Date;
-  date_upper_bound: Date;
-  status: OrderStatus;
-  price_lower_bound: number;
-  price_upper_bound: number;
+  date_lower_bound?: Date;
+  date_upper_bound?: Date;
+  status?: OrderStatus;
+  price_lower_bound?: number;
+  price_upper_bound?: number;
 }
 
 export interface WeightBracket {
