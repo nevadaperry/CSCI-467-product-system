@@ -46,6 +46,7 @@
     "jest": "^27.4.3",
     "jest-resolve": "^27.4.2",
     "jest-watch-typeahead": "^1.0.0",
+    "mailtrap": "^3.1.1",
     "mini-css-extract-plugin": "^2.4.5",
     "mysql": "^2.18.1",
     "perfect-scrollbar": "^1.5.5",

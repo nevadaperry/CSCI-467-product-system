@@ -44,7 +44,10 @@ export async function pullLegacyData(db: pg.Pool) {
         quantity: 0,
       });
     } catch (e) {
-      console.warn(`Error from createProduct in pullLegacyData: `, e);
+      console.error(
+        `Failed to createProduct() in pullLegacyData(). This may be due to another sync task running simultaneously.`
+      );
+      throw e;
     }
   }
 

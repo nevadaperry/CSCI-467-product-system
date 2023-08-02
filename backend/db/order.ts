@@ -183,9 +183,12 @@ export async function readOrder(db: pg.Pool, id: number) {
       os.status,
       os.date_placed,
       stats_1.line_items,
-      stats_2.total_price
+      stats_2.total_price,
+      c.name as customer_name,
+      c.email as customer_email
     FROM order_state os
     JOIN "order" o ON os.order_id = o.id
+    JOIN customer c ON o.customer_id = c.id
     CROSS JOIN stats_1
     CROSS JOIN stats_2
     WHERE os.order_id = ${id}

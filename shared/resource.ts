@@ -71,9 +71,11 @@ export interface Order {
    */
   date_placed?: Date;
   /**
-   * This is returned by API read responses for convenience.
+   * These properties are returned by API read responses for convenience.
    */
   total_price?: number;
+  customer_name?: string;
+  customer_email?: string;
 }
 export interface OrderFilters {
   date_lower_bound?: Date;

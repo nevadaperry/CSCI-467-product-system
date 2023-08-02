@@ -40,7 +40,7 @@ function AdminHome() {
             }
             onClick={() => setCurrentSection(Section.SHIPPING)}
           >
-            Fee schedule
+            Shipping fees
           </Button>
         </div>
       </header>
