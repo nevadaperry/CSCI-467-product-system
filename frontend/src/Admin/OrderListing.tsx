@@ -1,32 +1,37 @@
-import React from 'react';
-import { Button } from 'reactstrap';
-
-// Sample data to represent orders
-const sampleOrders = [
-  {
-    order_id: 1,
-    order_date: '2023-07-26T12:34:56', // Sample timestamp
-    total_price: 100.0,
-  },
-  {
-    order_id: 2,
-    order_date: '2023-07-27T10:20:30', // Sample timestamp
-    total_price: 150.0,
-  },
-  // Add more sample orders if needed
-];
+import React, { useState } from 'react';
+import * as api from '../api';
+import { useLoad } from '../custom-hooks';
+import { Button, Spinner, Table } from 'reactstrap';
+import OrderDetails from './OrderDetails'; // Import the OrderDetails component
 
 function OrderListing() {
-  // Placeholder for search box data/state (from OrderSearch.tsx)
-  // const [searchTerm, setSearchTerm] = useState('');
+  const [orders, ordersLoad] = useLoad(() => api.listOrders({}), 0); // Fetch orders from the API
+  const [selectedOrderId, setSelectedOrderId] = useState(null); // State to store the selected orderId
+
+  if (ordersLoad.status === 'loading') {
+    return <Spinner />;
+  }
+
+  if (!orders) {
+    return <div>Error: Error with connecting to database</div>;
+  }
+
+  // Function to handle opening the details modal
+  const handleDetailsButtonClick = (orderId) => {
+    setSelectedOrderId(orderId); // Store the selected orderId in state
+  };
+
+  // Function to handle closing the details modal
+  const handleCloseModal = () => {
+    setSelectedOrderId(null); // Clear the selected orderId to close the modal
+  };
 
   return (
     <div>
-      {/* Add search box here (from OrderSearch.tsx) */}
-      {/* <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /> */}
-
-      {/* Order Listing Table */}
-      <table className="table">
+      <header>
+        <h2>Order Listing Table</h2>
+      </header>
+      <Table className="ps-no-break">
         <thead>
           <tr>
             <th scope="col">Order ID</th>
@@ -36,25 +41,30 @@ function OrderListing() {
           </tr>
         </thead>
         <tbody>
-          {/* Map through the sample orders and display each row in the table */}
-          {sampleOrders.map((order) => (
-            <tr key={order.order_id}>
-              <td>{order.order_id}</td>
-              <td>
-                {/* Format the date using toLocaleDateString() */}
-                {new Date(order.order_date).toLocaleDateString()}
-              </td>
+          {orders.map((order) => (
+            <tr key={order.id}>
+              <td>{order.id}</td>
+              <td>{new Date(order.date_placed!).toLocaleDateString()}</td>
               <td>${order.total_price}</td>
               <td>
-                {/* Button to show more details (link to OrderDetails.tsx) */}
-                <Button onClick={() => console.log('Show more details')}>
+                {/* Button to open OrderDetail */}
+                <Button onClick={() => handleDetailsButtonClick(order.id)}>
                   Details
                 </Button>
               </td>
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
+
+      {/* Modal for displaying OrderDetails */}
+      {selectedOrderId && (
+        <OrderDetails
+          isOpen={true}
+          toggleModal={handleCloseModal}
+          orderId={selectedOrderId}
+        />
+      )}
     </div>
   );
 }

@@ -5,19 +5,19 @@ import * as api from '../api';
 import { FeeSchedule as FeeScheduleResource } from '../../../shared/resource';
 
 export default function FeeSchedule() {
-  // FS = fee schedule; WB = weight bracket.
   // Goal: Avoid focus-stealing or otherwise changing the visible data when
   // the user wouldn't expect it.
-  const [needsRefresh, setNeedsRefresh] = useState(true);
   const [refreshOrdinal, setRefreshOrdinal] = useState(0);
-  const [dbFS, dbFSLoad] = useLoad(api.readFeeSchedule, refreshOrdinal);
-  const [visibleFS, setVisibleFS] = useState<FeeScheduleResource>();
-  useEffect(() => {
-    if (needsRefresh && dbFSLoad.status === 'finished') {
-      setVisibleFS(dbFS);
-      setNeedsRefresh(false);
+  const [existingFS, existingFSLoad] = useLoad(
+    api.readFeeSchedule,
+    refreshOrdinal
+  );
+  const visibleFS = useMemo(() => {
+    if (existingFSLoad.status === 'finished') {
+      return existingFS;
     }
-  }, [needsRefresh, dbFS, dbFSLoad]);
+    return undefined;
+  }, [existingFSLoad]);
 
   const visibleWBs = useMemo(() => {
     if (!visibleFS) return undefined;
@@ -29,7 +29,8 @@ export default function FeeSchedule() {
     for (const [i, wb] of visibleFS?.weight_brackets.entries()) {
       result.push({
         lowerBound: wb.lower_bound,
-        upperBound: visibleFS.weight_brackets[i + 1]?.lower_bound ?? 999999,
+        upperBound:
+          (visibleFS.weight_brackets[i + 1]?.lower_bound ?? 1000000) - 0.01,
         fee: wb.fee,
       });
     }
@@ -41,8 +42,7 @@ export default function FeeSchedule() {
 
   function addWeightBracket() {
     (async () => {
-      // const result =
-      await api.updateFeeSchedule(dbFS!, {
+      const result = await api.updateFeeSchedule(existingFS!, {
         weight_brackets: visibleFS!.weight_brackets.concat({
           lower_bound: newLowerBound,
           fee: newFee,
@@ -50,16 +50,27 @@ export default function FeeSchedule() {
       });
       // TODO(nevada): Handle possible issues with resource not existing or
       // non-success state in UpdateResult
-      setNeedsRefresh(true);
       setRefreshOrdinal(refreshOrdinal + 1);
     })();
   }
 
-  function removeWeightBracket(index: number) {}
+  function removeWeightBracket(index: number) {
+    (async () => {
+      const result = await api.updateFeeSchedule(existingFS!, {
+        weight_brackets: [
+          ...visibleFS!.weight_brackets.slice(0, index),
+          ...visibleFS!.weight_brackets.slice(index + 1),
+        ],
+      });
+      // TODO(nevada): Handle possible issues with resource not existing or
+      // non-success state in UpdateResult
+      setRefreshOrdinal(refreshOrdinal + 1);
+    })();
+  }
 
   return (
     <div className="container">
-      {dbFSLoad.status === 'loading' ? (
+      {existingFSLoad.status === 'loading' ? (
         <Spinner />
       ) : (
         <>

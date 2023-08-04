@@ -18,6 +18,7 @@ export function useLoad<T>(
     status: 'loading',
   });
   useEffect(() => {
+    setResourceLoad({ status: 'loading' });
     (async () => {
       try {
         setResource(await loader());
