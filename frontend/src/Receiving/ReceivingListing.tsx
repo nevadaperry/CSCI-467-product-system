@@ -10,7 +10,7 @@ function ProductListing() {
   const [quantiti, setQuantiti] = useState(1);
   
   const updateStock = (item: Product, updatedQuantity) => {
-    api.updateProduct(item.id, item, {...item, quantity:updatedQuantity});
+    api.updateProduct(item.id!, item, {...item, quantity:updatedQuantity});
   };
 
   const handleChange = (event) => {
