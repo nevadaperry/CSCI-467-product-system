@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Button, Input, Spinner, Table } from 'reactstrap';
 import * as api from '../api';
 import { useLoad } from '../custom-hooks';
+import { Product } from '../../../shared/resource';
 
 function ProductListing() {
   const [products, productsLoad] = useLoad(() => api.listProducts({}), 0);
   
   const [quantiti, setQuantiti] = useState(1);
   
-  const updateStock = (item, updatedQuantity) => {
+  const updateStock = (item: Product, updatedQuantity) => {
     api.updateProduct(item.id, item, {...item, quantity:updatedQuantity});
   };
 
