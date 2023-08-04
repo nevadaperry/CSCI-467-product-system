@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import FeeSchedule from './FeeSchedule';
 import OrderListing from './OrderListing';
 import OrderSearch from './OrderSearch';
-import OrderDetails from './OrderDetails';
 import { Button } from 'reactstrap';
 
 // Define the Section enum here
@@ -51,7 +50,6 @@ function AdminHome() {
         <>
           <OrderListing />
           <OrderSearch />
-          <OrderDetails />
         </>
       )}
       <footer>&nbsp;</footer>

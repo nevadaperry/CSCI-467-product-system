@@ -5,7 +5,7 @@ import { Button, Spinner, Table } from 'reactstrap';
 import OrderDetails from './OrderDetails'; // Import the OrderDetails component
 
 function OrderListing() {
-  const [orders, ordersLoad] = useLoad(() => api.listOrders({}), []); // Fetch orders from the API
+  const [orders, ordersLoad] = useLoad(() => api.listOrders({}), 0); // Fetch orders from the API
   const [selectedOrderId, setSelectedOrderId] = useState(null); // State to store the selected orderId
 
   if (ordersLoad.status === 'loading') {
@@ -44,7 +44,7 @@ function OrderListing() {
           {orders.map((order) => (
             <tr key={order.id}>
               <td>{order.id}</td>
-              <td>{new Date(order.date_placed).toLocaleDateString()}</td>
+              <td>{new Date(order.date_placed!).toLocaleDateString()}</td>
               <td>${order.total_price}</td>
               <td>
                 {/* Button to open OrderDetail */}
@@ -59,7 +59,11 @@ function OrderListing() {
 
       {/* Modal for displaying OrderDetails */}
       {selectedOrderId && (
-        <OrderDetails isOpen={true} toggleModal={handleCloseModal} orderId={selectedOrderId} />
+        <OrderDetails
+          isOpen={true}
+          toggleModal={handleCloseModal}
+          orderId={selectedOrderId}
+        />
       )}
     </div>
   );

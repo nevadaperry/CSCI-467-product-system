@@ -29,7 +29,8 @@ export default function FeeSchedule() {
     for (const [i, wb] of visibleFS?.weight_brackets.entries()) {
       result.push({
         lowerBound: wb.lower_bound,
-        upperBound: visibleFS.weight_brackets[i + 1]?.lower_bound ?? 999999,
+        upperBound:
+          (visibleFS.weight_brackets[i + 1]?.lower_bound ?? 1000000) - 0.01,
         fee: wb.fee,
       });
     }

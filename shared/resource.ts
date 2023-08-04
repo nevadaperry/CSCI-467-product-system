@@ -69,7 +69,7 @@ export interface Order {
    * This is set by the db when the resource is created, and returned by API
    * read responses for convenience.
    */
-  date_placed?: Date;
+  date_placed?: string;
   /**
    * These properties are returned by API read responses for convenience.
    */

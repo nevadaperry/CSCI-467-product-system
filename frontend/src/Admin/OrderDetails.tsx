@@ -1,10 +1,17 @@
 import React from 'react';
-import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Spinner } from 'reactstrap';
+import {
+  Modal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Spinner,
+} from 'reactstrap';
 import { useLoad } from '../custom-hooks';
 import * as api from '../api'; // Import the api file
 function OrderDetails({ isOpen, toggleModal, orderId }) {
-  const [order, orderLoad] = useLoad(() => api.readOrder(orderId), [orderId]); // Fetch order details from the API
-  const [feeSchedule, feeScheduleLoad] = useLoad(() => api.readFeeSchedule(), []); // Fetch fee schedule from the API
+  const [order, orderLoad] = useLoad(() => api.readOrder(orderId), orderId); // Fetch order details from the API
+  const [feeSchedule, feeScheduleLoad] = useLoad(() => api.readFeeSchedule()); // Fetch fee schedule from the API
   if (!isOpen) {
     // If the modal is not open, don't render anything
     return null;
@@ -24,7 +31,7 @@ function OrderDetails({ isOpen, toggleModal, orderId }) {
   const calculateAmountWithoutShipping = () => {
     let amount = 0;
     order.line_items.forEach((item) => {
-      amount += item.product.price * item.quantity;
+      amount += item.product!.price * item.quantity;
     });
     return amount;
   };
@@ -32,7 +39,7 @@ function OrderDetails({ isOpen, toggleModal, orderId }) {
   const calculateShipping = () => {
     let shipping = 0;
     const weight = order.line_items.reduce((totalWeight, item) => {
-      return totalWeight + item.product.weight * item.quantity;
+      return totalWeight + item.product!.weight * item.quantity;
     }, 0);
     // Find the relevant shipping fee from the fee schedule
     feeSchedule.weight_brackets.forEach((bracket) => {
@@ -52,25 +59,33 @@ function OrderDetails({ isOpen, toggleModal, orderId }) {
         Order ID: {order.id} | Order Status: {order.status}
       </ModalHeader>
       <ModalBody>
-        <h5>Order Date: {new Date(order.date_placed).toLocaleDateString()}</h5>
+        <h5>Order Date: {new Date(order.date_placed!).toLocaleDateString()}</h5>
         <h5>Customer Info:</h5>
-        <p>Customer Name: {order.customer_id}</p>
+        <p>
+          Customer Name: {order.customer_name} [#{order.customer_id}]
+        </p>
         <p>Customer Address: {order.shipping_address}</p>
         {/* <p>Customer Email: {order.customer.email}</p> */}
         <p>Credit Card Info: **** **** **** {order.cc_last_four}</p>
         <p>Payment authorization number: {order.auth_number}</p>
-        <h5>Order Items </h5> 
+        <h5>Order Items </h5>
         <ul>
           {order.line_items.map((item) => (
             <li key={item.product_id}>
-              Product: {item.product.description} | Amount: {item.quantity} | Cost: ${item.product.price} | Weight: {item.product.weight}
+              Product: {item.product?.description} | Amount: {item.quantity} |
+              Cost: ${item.product?.price} | Weight: {item.product?.weight}
             </li>
           ))}
         </ul>
         <h5> Total cost :</h5>
-        <p>Amount (without shipping): ${calculateAmountWithoutShipping()}</p>
+        <p>
+          Amount (without shipping): $
+          {calculateAmountWithoutShipping().toFixed(2)}
+        </p>
         <p>Shipping: ${calculateShipping()}</p>
-        <h4>Total: ${calculateAmountWithoutShipping() + calculateShipping()}</h4>
+        <h4>
+          Total: ${calculateAmountWithoutShipping() + calculateShipping()}
+        </h4>
       </ModalBody>
       <ModalFooter>
         <Button color="secondary" onClick={handleCloseModal}>
