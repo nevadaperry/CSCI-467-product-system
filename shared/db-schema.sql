@@ -114,7 +114,7 @@ CREATE TABLE weight_bracket (
   lower_bound numeric(11,2) NOT NULL,
   fee numeric(11,2) NOT NULL
 );
-CREATE INDEX weight_bracket_fee_schedule_state_id_lower_bound ON weight_bracket (fee_schedule_state_id, lower_bound);
+CREATE UNIQUE INDEX weight_bracket_fee_schedule_state_id_lower_bound ON weight_bracket (fee_schedule_state_id, lower_bound);
 
 
 

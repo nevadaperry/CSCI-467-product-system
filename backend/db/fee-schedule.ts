@@ -55,7 +55,8 @@ export async function updateFeeSchedule(
         inserted_fss.id,
         wb.lower_bound,
         wb.fee
-      FROM jsonb_to_recordset(${JSON.stringify(
+      FROM inserted_fss
+      CROSS JOIN jsonb_to_recordset(${JSON.stringify(
         update.weight_brackets
       )}::jsonb) AS wb (
         lower_bound numeric(11,2),
