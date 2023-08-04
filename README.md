@@ -1,1 +1,1 @@
-Live at https://product-system-frontend.onrender.com/
+Live at https://productsystem.store
