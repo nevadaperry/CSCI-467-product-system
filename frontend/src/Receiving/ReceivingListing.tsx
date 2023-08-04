@@ -5,7 +5,16 @@ import { useLoad } from '../custom-hooks';
 
 function ProductListing() {
   const [products, productsLoad] = useLoad(() => api.listProducts({}), 0);
+  
+  const [quantiti, setQuantiti] = useState(1);
+  
+  const updateStock = (item, updatedQuantity) => {
+    api.updateProduct(item.id, item, {...item, quantity:updatedQuantity});
+  };
 
+  const handleChange = (event) => {
+    setQuantiti(event.target.value);
+  };
 
   return (
     <div>
@@ -36,7 +45,12 @@ function ProductListing() {
               <td className="ps-cell ps-right">{product.quantity} in stock</td>
               <td className="ps-cell ps-left">Qty:</td>
               <td className="ps-cell ps-left">
-                <Input type="number" value="1" className="ps-input" />
+                <Input type="number" value={quantiti} id="quantiti" className="ps-input" onChange={handleChange} />
+              </td>
+              <td className="ps-cell ps-left">
+                <Button className="ps-input" color="success" onClick={() => updateStock(product, quantiti)}>
+                  Update
+                </Button>
               </td>
             </tr>
           ))}
