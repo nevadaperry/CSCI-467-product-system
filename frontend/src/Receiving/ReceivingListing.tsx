@@ -9,12 +9,14 @@ function ProductListing() {
   
   const [quantiti, setQuantiti] = useState(1);
   
-  const updateStock = (item: Product, updatedQuantity) => {
-    api.updateProduct(item.id!, item, {...item, quantity:updatedQuantity});
+  let listQuantities = Array(products!.length+1).fill(1);
+
+  const updateStock = (item: Product, updatedQuantity: number) => {
+    console.log(api.updateProduct(item.id!, item, {...item, quantity:updatedQuantity}));
   };
 
-  const handleChange = (event) => {
-    setQuantiti(event.target.value);
+  const handleChange = (event, updateNumber) => {
+    listQuantities[updateNumber] = event.target.value;
   };
 
   return (
@@ -46,7 +48,7 @@ function ProductListing() {
               <td className="ps-cell ps-right">{product.quantity} in stock</td>
               <td className="ps-cell ps-left">Qty:</td>
               <td className="ps-cell ps-left">
-                <Input type="number" value={quantiti} id="quantiti" className="ps-input" onChange={handleChange} />
+                <Input type="number" value={listQuantities[product.part_number]} id="quantiti" className="ps-input" onChange={() => handleChange(event, product.part_number)} />
               </td>
               <td className="ps-cell ps-left">
                 <Button className="ps-input" color="success" onClick={() => updateStock(product, quantiti)}>
