@@ -73,8 +73,9 @@ CREATE TABLE order_state (
   cc_last_four char(4) NOT NULL,
   shipping_address text NOT NULL,
   status order_status NOT NULL,
-  -- total_price is only for searching/indexing. The frontend should compute it
-  -- from line_items + weight_bracket.fee instead.
+  -- Canonically represents total of line items + fee from fee schedule at the
+  -- time the order was placed. Total price should never be recomputed in case
+  -- the product prices or fee schedule change.
   total_price numeric(11,2) NOT NULL,
   date_placed timestamptz NOT NULL
 );

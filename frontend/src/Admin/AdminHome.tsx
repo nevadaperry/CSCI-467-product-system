@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import FeeSchedule from './FeeSchedule';
 import OrderListing from './OrderListing';
-import OrderSearch from './OrderSearch';
 import { Button } from 'reactstrap';
 
 // Define the Section enum here
@@ -16,7 +15,7 @@ enum Section {
 }
 
 function AdminHome() {
-  const [currentSection, setCurrentSection] = useState(Section.SHIPPING);
+  const [currentSection, setCurrentSection] = useState(Section.ORDERS);
   // State to keep track of which section is currently being displayed.
   // By default, it is set to the Shipping and Handling Settings section (SHIPPING).
   return (
@@ -49,7 +48,6 @@ function AdminHome() {
       ) : (
         <>
           <OrderListing />
-          <OrderSearch />
         </>
       )}
       <footer>&nbsp;</footer>

@@ -122,7 +122,7 @@ export function generateWrappers(db: pg.Pool) {
     ) {
       return async function (request: hapi.Request, h: hapi.ResponseToolkit) {
         try {
-          const result = await endpoint(db, request.params as FilterType);
+          const result = await endpoint(db, request.query as FilterType);
           if (!result) {
             return h
               .response(`Didn't receive any response from search`)

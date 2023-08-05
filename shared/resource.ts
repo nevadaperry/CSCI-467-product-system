@@ -36,12 +36,20 @@ export interface OrderLineItem {
    */
   product?: Product;
 }
-export type OrderStatus = 'authorized' | 'shipped';
+export const orderStatuses = ['authorized', 'shipped'] as const;
+export type OrderStatus = (typeof orderStatuses)[number];
 export interface Order {
   id?: number;
-  customer_id: number;
   shipping_address: string;
   line_items: OrderLineItem[];
+  /**
+   * Either customer_id or (customer_name and customer_email) must be specified
+   * on API create requests. Name and email are returned by API read responses
+   * for convenience.
+   */
+  customer_id?: number;
+  customer_name?: string;
+  customer_email?: string;
   /**
    * This must be provided by the frontend on create requests.
    */
@@ -51,6 +59,12 @@ export interface Order {
     cvv: string;
     cardholder_name: string;
   };
+  /**
+   * This is calculated by the backend from the prices of products and fee
+   * from the fee schedule at the time the order is placed. Returned by API read
+   * responses.
+   */
+  total_price?: number;
   /**
    * This is set by the backend to 'authorized' if payment processing
    * succeeds, and returned by API read responses.
@@ -70,12 +84,6 @@ export interface Order {
    * read responses for convenience.
    */
   date_placed?: string;
-  /**
-   * These properties are returned by API read responses for convenience.
-   */
-  total_price?: number;
-  customer_name?: string;
-  customer_email?: string;
 }
 export interface OrderFilters {
   date_lower_bound?: Date;

@@ -1,16 +1,18 @@
 import * as pg from 'pg';
+import * as nodemailer from 'nodemailer';
 import SQL from 'pg-template-tag';
 import {
   CreateResult,
   Order,
   OrderFilters,
   UpdateResult,
+  orderStatuses,
 } from '../../shared/resource';
 import axios from 'axios';
+import { upsertCustomer } from './customer';
 
 function validateOrder(order: Order) {
   if (!order) throw new Error(`Missing entire order`);
-  if (!order.customer_id) throw new Error(`Missing customer_id`);
   if (!order.shipping_address) throw new Error(`Missing shipping_address`);
   if ((order.line_items?.length ?? 0) === 0)
     throw new Error(`Missing line_items`);
@@ -24,6 +26,22 @@ function validateOrder(order: Order) {
 export async function createOrder(db: pg.Pool, order: Order) {
   validateOrder(order);
 
+  const customerId = await (async () => {
+    if (order.customer_name && order.customer_email) {
+      const customer = await upsertCustomer(db, {
+        name: order.customer_name,
+        email: order.customer_email,
+      });
+      return customer.id;
+    }
+    if (order.customer_id) {
+      return order.customer_id;
+    }
+    throw new Error(
+      `Missing (customer_id) and (customer_name, customer_email). Need one of the two options.`
+    );
+  })();
+
   const {
     rows: [orderMeta],
   } = await db.query<{
@@ -32,7 +50,7 @@ export async function createOrder(db: pg.Pool, order: Order) {
   }>(SQL`
     WITH new_order AS (
       INSERT INTO "order" (customer_id)
-      VALUES (${order.customer_id})
+      VALUES (${customerId})
       RETURNING id
     ), stats_1 AS (
       SELECT
@@ -84,8 +102,33 @@ export async function createOrder(db: pg.Pool, order: Order) {
     exp: order.cc_full!.exp,
   });
 
+  try {
+    if (!process.env.MAILTRAP_USERNAME || !process.env.MAILTRAP_PASSWORD) {
+      throw new Error(
+        `Missing MAILTRAP_USERNAME or MAILTRAP_PASSWORD in createOrder(). Order confirmation email will not be sent.`
+      );
+    }
+    const transport = nodemailer.createTransport({
+      host: 'sandbox.smtp.mailtrap.io',
+      port: 2525,
+      auth: {
+        user: process.env.MAILTRAP_USERNAME,
+        pass: process.env.MAILTRAP_PASSWORD,
+      },
+    });
+    // async
+    transport.sendMail({
+      to: order.customer_email,
+      subject: 'Test',
+      text: 'Content here',
+      html: 'Content here',
+    });
+  } catch (e) {
+    console.error(e);
+  }
+
   const {
-    rows: [finalResult],
+    rows: [createResult],
   } = await db.query<CreateResult>(SQL`
     WITH new_order_state AS (
       INSERT INTO order_state (
@@ -104,7 +147,9 @@ export async function createOrder(db: pg.Pool, order: Order) {
         ${order.cc_full!.digits.slice(-4)},
         ${order.shipping_address},
         'authorized',
-        to_timestamp(${paymentResult.timeStamp})
+        -- TODO(nevada): Fix this so it doesn't return the year 55432-MM-DD
+        --to_timestamp(${/*paymentResult.timeStamp*/ ''})
+        now()
       )
       RETURNING id, order_id
     ), associated_line_item AS (
@@ -129,7 +174,8 @@ export async function createOrder(db: pg.Pool, order: Order) {
     FROM new_order_state
     LEFT JOIN associated_line_item ON TRUE
   `);
-  return finalResult;
+
+  return createResult;
 }
 
 export async function readOrder(db: pg.Pool, id: number) {
@@ -308,8 +354,7 @@ export async function updateOrder(
 
 // TODO(nevada): Write deleteOrder()
 
-export async function listOrders(db: pg.Pool, _filters: OrderFilters) {
-  // TODO(nevada): Implement filtering
+export async function listOrders(db: pg.Pool, filters: OrderFilters) {
   const { rows: orders } = await db.query<Order>(SQL`
     WITH stats_1 AS (
       SELECT
@@ -366,7 +411,15 @@ export async function listOrders(db: pg.Pool, _filters: OrderFilters) {
     JOIN stats_1 ON stats_1.order_id = o.id
     JOIN stats_2 ON stats_2.order_id = o.id
     WHERE os.is_latest = true
+      AND os.status = ANY(${
+        filters.status ? [filters.status] : orderStatuses
+      }::order_status[])
+      AND os.total_price >= ${filters.price_lower_bound ?? 0}
+      AND os.total_price <= ${filters.price_upper_bound ?? 999999999.99}
+      AND os.date_placed >= ${filters.date_lower_bound ?? '1900-01-01'}
+      AND os.date_placed <= ${filters.date_upper_bound ?? '9999-12-31'}
       AND os.deleted = false
+    ORDER BY o.id ASC
   `);
   return orders;
 }

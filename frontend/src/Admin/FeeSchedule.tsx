@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Input, Label, Spinner } from 'reactstrap';
+import { Button, Input, Label, Spinner, Toast } from 'reactstrap';
 import { useLoad } from '../custom-hooks';
 import * as api from '../api';
 import { FeeSchedule as FeeScheduleResource } from '../../../shared/resource';
@@ -42,15 +42,21 @@ export default function FeeSchedule() {
 
   function addWeightBracket() {
     (async () => {
-      const result = await api.updateFeeSchedule(existingFS!, {
-        weight_brackets: visibleFS!.weight_brackets.concat({
-          lower_bound: newLowerBound,
-          fee: newFee,
-        }),
-      });
-      // TODO(nevada): Handle possible issues with resource not existing or
-      // non-success state in UpdateResult
-      setRefreshOrdinal(refreshOrdinal + 1);
+      try {
+        const result = await api.updateFeeSchedule(existingFS!, {
+          weight_brackets: visibleFS!.weight_brackets.concat({
+            lower_bound: newLowerBound,
+            fee: newFee,
+          }),
+        });
+        // TODO(nevada): Handle possible issues with resource not existing or
+        // non-success state in UpdateResult
+        setRefreshOrdinal(refreshOrdinal + 1);
+      } catch (e) {
+        throw new Error(
+          `Server rejected new weight bracket, likely because you set a lower bound that overlaps with an existing one. ${e}`
+        );
+      }
     })();
   }
 
@@ -79,7 +85,7 @@ export default function FeeSchedule() {
               <tr>
                 <th className="ps-right">Lower bound</th>
                 <th className="ps-right">Upper bound</th>
-                <th className="ps-right">S&H fee</th>
+                <th className="ps-right">Shipping fee</th>
                 <th></th>
               </tr>
             </thead>
@@ -111,7 +117,7 @@ export default function FeeSchedule() {
               />
             </div>
             <div className="ps-inline-flex ps-personal-space">
-              <Label>New S&H fee ($):&nbsp;</Label>
+              <Label>New shipping fee ($):&nbsp;</Label>
               <Input
                 type="number"
                 step="0.01"

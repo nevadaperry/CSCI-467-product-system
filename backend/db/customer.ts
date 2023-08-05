@@ -8,25 +8,42 @@ import {
   UpdateResult,
 } from '../../shared/resource';
 
-export async function createCustomer(db: pg.Pool, customer: Customer) {
+export async function upsertCustomer(db: pg.Pool, customer: Customer) {
+  // TODO(nevada): Fix this to do an update like updateCustomer does it, instead
+  // of overwriting state on email conflict / name update
   const {
     rows: [result],
   } = await db.query<CreateResult>(SQL`
     WITH new_customer AS (
       INSERT INTO customer DEFAULT VALUES
       RETURNING id
+    ), new_customer_state AS (
+      INSERT INTO customer_state (
+        customer_id,
+        name,
+        email
+      )
+      SELECT
+        new_customer.id,
+        ${customer.name},
+        ${customer.email}
+      FROM new_customer
+      ON CONFLICT DO NOTHING
+      RETURNING customer_id
+    ), updated_customer_state AS (
+      -- If the insert above succeeds, this is a no-op.
+      UPDATE customer_state
+      SET name = ${customer.name}
+      WHERE email = ${customer.email}
+        AND is_latest = true
+        AND deleted = false
+      RETURNING customer_id
     )
-    INSERT INTO customer_state (
-      customer_id,
-      name,
-      email
-    )
-    SELECT
-      new_customer.id,
-      ${customer.name},
-      ${customer.email},
-    FROM new_customer
-    RETURNING customer_id AS id
+    SELECT customer_id AS id
+    FROM new_customer_state
+    UNION ALL
+    SELECT customer_id AS id
+    FROM updated_customer_state
   `);
   return result;
 }

@@ -1,20 +1,57 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import * as api from '../api';
+import moment from 'moment';
 import { useLoad } from '../custom-hooks';
-import { Button, Spinner, Table } from 'reactstrap';
+import {
+  Button,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownToggle,
+  Input,
+  Label,
+  Modal,
+  ModalBody,
+  ModalHeader,
+  Spinner,
+  Table,
+} from 'reactstrap';
+import { DateRangePicker } from 'react-date-range';
 import OrderDetails from './OrderDetails'; // Import the OrderDetails component
 
 function OrderListing() {
-  const [orders, ordersLoad] = useLoad(() => api.listOrders({}), 0); // Fetch orders from the API
+  const [dateRanges, setDateRanges] = useState([
+    {
+      startDate: new Date('2000-01-02'),
+      endDate: new Date('2043-12-31'),
+      key: 'selection',
+    },
+  ]);
+  const [statusFilterIsOpen, setStatusFilterIsOpen] = useState(false);
+  const [dateModalIsOpen, setDateModalIsOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<
+    'authorized' | 'shipped' | undefined
+  >(undefined);
+  const [priceLowerBound, setPriceLowerBound] = useState(0);
+  const [priceUpperBound, setPriceUpperBound] = useState(477777);
+  const filters = useMemo(() => {
+    return {
+      date_lower_bound: dateRanges[0]?.startDate,
+      date_upper_bound: dateRanges[0]?.endDate,
+      status: statusFilter,
+      price_lower_bound: priceLowerBound,
+      price_upper_bound: priceUpperBound,
+    };
+  }, [dateRanges, statusFilter, priceLowerBound, priceUpperBound]);
+  const [refreshOrdinal, setRefreshOrdinal] = useState(0);
+  const [orders, ordersLoad] = useLoad(
+    () => api.listOrders(filters),
+    refreshOrdinal
+  ); // Fetch orders from the API
   const [selectedOrderId, setSelectedOrderId] = useState(null); // State to store the selected orderId
-
-  if (ordersLoad.status === 'loading') {
-    return <Spinner />;
-  }
-
-  if (!orders) {
-    return <div>Error: Error with connecting to database</div>;
-  }
+  useEffect(() => {
+    setRefreshOrdinal(refreshOrdinal + 1);
+  }, [filters]);
 
   // Function to handle opening the details modal
   const handleDetailsButtonClick = (orderId) => {
@@ -30,32 +67,118 @@ function OrderListing() {
     <div>
       <header>
         <h2>Order Listing Table</h2>
-      </header>
-      <Table className="ps-no-break">
-        <thead>
+        <Modal
+          className="ps-fit-content"
+          isOpen={dateModalIsOpen}
+          toggle={() => setDateModalIsOpen(!dateModalIsOpen)}
+        >
+          <ModalHeader toggle={() => setDateModalIsOpen(false)}>
+            Date range for order search
+          </ModalHeader>
+          <ModalBody>
+            <DateRangePicker
+              onChange={(item) => setDateRanges([item.selection])}
+              showSelectionPreview={true}
+              moveRangeOnFirstSelection={false}
+              months={2}
+              ranges={dateRanges}
+              direction="horizontal"
+            />
+          </ModalBody>
+        </Modal>
+        <Table>
           <tr>
-            <th scope="col">Order ID</th>
-            <th scope="col">Order Date</th>
-            <th scope="col">Order Total</th>
-            <th scope="col">Details</th>
+            <td>
+              <Button
+                onClick={() => setDateModalIsOpen(true)}
+                color="secondary"
+              >
+                Select date range (currently{' '}
+                {moment(filters.date_lower_bound).format('YYYY-MM-DD')} to{' '}
+                {moment(filters.date_upper_bound).format('YYYY-MM-DD')})
+              </Button>
+            </td>
+            <td>
+              <Dropdown
+                isOpen={statusFilterIsOpen}
+                toggle={() => setStatusFilterIsOpen(!statusFilterIsOpen)}
+              >
+                <DropdownToggle caret>
+                  Status filter (currently {statusFilter ? statusFilter : 'any'}
+                  )
+                </DropdownToggle>
+                <DropdownMenu>
+                  <DropdownItem onClick={() => setStatusFilter(undefined)}>
+                    Any
+                  </DropdownItem>
+                  <DropdownItem onClick={() => setStatusFilter('authorized')}>
+                    Authorized
+                  </DropdownItem>
+                  <DropdownItem onClick={() => setStatusFilter('shipped')}>
+                    Shipped
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.id}>
-              <td>{order.id}</td>
-              <td>{new Date(order.date_placed!).toLocaleDateString()}</td>
-              <td>${order.total_price}</td>
-              <td>
-                {/* Button to open OrderDetail */}
-                <Button onClick={() => handleDetailsButtonClick(order.id)}>
-                  Details
-                </Button>
-              </td>
+          <tr>
+            <td>
+              <Label className="ps-inline-flex">Price lower bound:&nbsp;</Label>
+              <Input
+                className="ps-inline-flex"
+                type="number"
+                step="0.01"
+                value={priceLowerBound}
+                onChange={(e) => setPriceLowerBound(parseFloat(e.target.value))}
+              />
+            </td>
+            <td>
+              <Label className="ps-inline-flex">Price upper bound:&nbsp;</Label>
+              <Input
+                className="ps-inline-flex"
+                type="number"
+                step="0.01"
+                value={priceUpperBound}
+                onChange={(e) => setPriceUpperBound(parseFloat(e.target.value))}
+              />
+            </td>
+          </tr>
+        </Table>
+      </header>
+      {ordersLoad.status === 'loading' ? (
+        <Spinner />
+      ) : !orders ? (
+        <div>Error: Error with connecting to database</div>
+      ) : (
+        <Table className="ps-no-break">
+          <thead>
+            <tr>
+              <th scope="col">Order ID</th>
+              <th scope="col">Order Date</th>
+              <th scope="col">Order Total</th>
+              <th scope="col">Details</th>
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {orders.map((order) => (
+              <tr key={order.id}>
+                <td>{order.id}</td>
+                <td>{new Date(order.date_placed!).toLocaleDateString()}</td>
+                <td>${order.total_price}</td>
+                <td>
+                  {/* Button to open OrderDetail */}
+                  <Button onClick={() => handleDetailsButtonClick(order.id)}>
+                    Details
+                  </Button>
+                </td>
+              </tr>
+            ))}
+            {orders.length === 0 && (
+              <span className="ps-center">No orders found.</span>
+            )}
+          </tbody>
+        </Table>
+      )}
 
       {/* Modal for displaying OrderDetails */}
       {selectedOrderId && (

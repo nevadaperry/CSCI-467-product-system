@@ -9,7 +9,7 @@ import {
   deleteProduct,
 } from './db/product';
 import {
-  createCustomer,
+  upsertCustomer,
   listCustomers,
   readCustomer,
   updateCustomer,
@@ -60,7 +60,7 @@ export async function addRoutes(server: hapi.Server, db: pg.Pool) {
   server.route({
     method: 'POST',
     path: `${routePrefix}/customer`,
-    handler: wrapCreate(createCustomer),
+    handler: wrapCreate(upsertCustomer),
   });
   server.route({
     method: 'GET',
