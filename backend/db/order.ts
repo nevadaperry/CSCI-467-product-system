@@ -102,31 +102,6 @@ export async function createOrder(db: pg.Pool, order: Order) {
     exp: order.cc_full!.exp,
   });
 
-  try {
-    if (!process.env.MAILTRAP_USERNAME || !process.env.MAILTRAP_PASSWORD) {
-      throw new Error(
-        `Missing MAILTRAP_USERNAME or MAILTRAP_PASSWORD in createOrder(). Order confirmation email will not be sent.`
-      );
-    }
-    const transport = nodemailer.createTransport({
-      host: 'sandbox.smtp.mailtrap.io',
-      port: 2525,
-      auth: {
-        user: process.env.MAILTRAP_USERNAME,
-        pass: process.env.MAILTRAP_PASSWORD,
-      },
-    });
-    // async
-    transport.sendMail({
-      to: order.customer_email,
-      subject: 'Test',
-      text: 'Content here',
-      html: 'Content here',
-    });
-  } catch (e) {
-    console.error(e);
-  }
-
   const {
     rows: [createResult],
   } = await db.query<CreateResult>(SQL`
@@ -174,6 +149,40 @@ export async function createOrder(db: pg.Pool, order: Order) {
     FROM new_order_state
     LEFT JOIN associated_line_item ON TRUE
   `);
+
+  // TODO(nevada): Make this a job enqueue to improve durability
+  try {
+    if (!process.env.MAILTRAP_USERNAME || !process.env.MAILTRAP_PASSWORD) {
+      throw new Error(
+        `Missing MAILTRAP_USERNAME or MAILTRAP_PASSWORD in createOrder(). Order confirmation email will not be sent.`
+      );
+    }
+    const transport = nodemailer.createTransport({
+      host: 'sandbox.smtp.mailtrap.io',
+      port: 2525,
+      auth: {
+        user: process.env.MAILTRAP_USERNAME,
+        pass: process.env.MAILTRAP_PASSWORD,
+      },
+    });
+    // TODO(nevada) get the payment date from paymentResult.timeStamp
+    const body = `
+Your order #${orderMeta.id} is confirmed.
+Shipping address: ${order.shipping_address}
+Date placed: ${new Date()}
+Line items: ${(JSON.stringify(order.line_items), null, 2)}
+Total price: ${orderMeta.total_price}
+`;
+    // async
+    transport.sendMail({
+      to: order.customer_email,
+      subject: 'Order confirmed!',
+      text: body,
+      html: body,
+    });
+  } catch (e) {
+    console.error(e);
+  }
 
   return createResult;
 }
@@ -349,6 +358,44 @@ export async function updateOrder(
     LEFT JOIN updated_order_state updated ON TRUE
     LEFT JOIN associated_line_item ON TRUE
   `);
+
+  if (existing.status === 'authorized' && update.status === 'shipped') {
+    // TODO(nevada): Make this a job enqueue to improve durability
+    try {
+      if (!process.env.MAILTRAP_USERNAME || !process.env.MAILTRAP_PASSWORD) {
+        throw new Error(
+          `Missing MAILTRAP_USERNAME or MAILTRAP_PASSWORD in createOrder(). Order shipped email will not be sent.`
+        );
+      }
+      const transport = nodemailer.createTransport({
+        host: 'sandbox.smtp.mailtrap.io',
+        port: 2525,
+        auth: {
+          user: process.env.MAILTRAP_USERNAME,
+          pass: process.env.MAILTRAP_PASSWORD,
+        },
+      });
+      // TODO(nevada) get the payment date from paymentResult.timeStamp
+      const body = `
+Your order #${id} has been shipped!
+Shipping address: ${update.shipping_address}
+Date placed: ${update.date_placed}
+Line items: ${(JSON.stringify(update.line_items), null, 2)}
+Total price: ${update.total_price}
+`;
+      // async
+      transport.sendMail({
+        // TODO streamline this so comes from the db query above
+        to: update.customer_email,
+        subject: 'Order shipped!',
+        text: body,
+        html: body,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   return result;
 }
 
