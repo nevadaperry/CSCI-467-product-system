@@ -33,7 +33,6 @@ function CartPage({ cartItems, totalPrice }) {
           ))}
         </tbody>
       </Table>
-      {/* TODO FIX TOTAL PRICING!! */}
       <p>Total Price: ${totalPrice}</p>
       <form>
         <div>

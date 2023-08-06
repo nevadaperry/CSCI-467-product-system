@@ -18,7 +18,8 @@ function CustomerHome() {
 
   const addToCart = (product) => {
     setCartItems([...cartItems, { ...product, quantitySelected: 1 }]);
-    setTotalPrice((prevTotal) => prevTotal + product.price);
+    var curTotal: number = parseFloat(totalPrice) + parseFloat(product.price)
+    setTotalPrice(curTotal);
   };
 
   return (
