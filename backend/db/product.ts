@@ -104,7 +104,7 @@ export async function updateProduct(
         ${update.weight},
         ${update.picture_url},
         ${update.price},
-        ${update.quantity},
+        ${update.quantity}
       FROM unmarked
       RETURNING true AS success
     )
@@ -180,7 +180,8 @@ export async function deleteProduct(
   return result;
 }
 
-export async function listProducts(db: pg.Pool, _filters: ProductFilters) {
+export async function listProducts(db: pg.Pool, filters: ProductFilters) {
+  console.log(JSON.stringify(filters));
   const { rows: products } = await db.query<Product>(SQL`
     SELECT
       product_id AS id,
@@ -193,6 +194,8 @@ export async function listProducts(db: pg.Pool, _filters: ProductFilters) {
     FROM product_state
     WHERE is_latest = true
       AND deleted = false
+      AND part_number::text ilike ${`%${filters.id ?? ''}%`}::text
+      AND description::text ilike ${`%${filters.description ?? ''}%`}::text
   `);
   return products;
 }

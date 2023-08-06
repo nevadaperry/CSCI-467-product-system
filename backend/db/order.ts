@@ -238,7 +238,8 @@ export async function readOrder(db: pg.Pool, id: number) {
       os.status,
       os.date_placed,
       stats_1.line_items,
-      stats_2.total_price,
+      --stats_2.total_price,
+      os.total_price,
       cs.name as customer_name,
       cs.email as customer_email
     FROM order_state os
@@ -452,7 +453,8 @@ export async function listOrders(db: pg.Pool, filters: OrderFilters) {
       os.status,
       os.date_placed,
       stats_1.line_items,
-      stats_2.total_price
+      --stats_2.total_price
+      os.total_price
     FROM order_state os
     JOIN "order" o ON os.order_id = o.id
     JOIN stats_1 ON stats_1.order_id = o.id
@@ -463,8 +465,10 @@ export async function listOrders(db: pg.Pool, filters: OrderFilters) {
       }::order_status[])
       AND os.total_price >= ${filters.price_lower_bound ?? 0}
       AND os.total_price <= ${filters.price_upper_bound ?? 999999999.99}
-      AND os.date_placed >= ${filters.date_lower_bound ?? '1900-01-01'}
-      AND os.date_placed <= ${filters.date_upper_bound ?? '9999-12-31'}
+      AND date_trunc('day', os.date_placed)
+        >= date_trunc('day', ${filters.date_lower_bound ?? '1900-01-01'}::date)
+      AND date_trunc('day', os.date_placed)
+        <= date_trunc('day', ${filters.date_upper_bound ?? '9999-12-31'}::date)
       AND os.deleted = false
     ORDER BY o.id ASC
   `);
