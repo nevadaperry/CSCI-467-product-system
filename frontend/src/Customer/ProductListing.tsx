@@ -1,21 +1,16 @@
-import React, { useState } from 'react';
+// export default ProductListing;
+import React from 'react';
 import { Button, Input, Spinner, Table } from 'reactstrap';
 import * as api from '../api';
 import { useLoad } from '../custom-hooks';
 
-function ProductListing() {
+function ProductListing({ addToCart }) {
   const [products, productsLoad] = useLoad(() => api.listProducts({}), 0);
-  const [cartCount, setCartCount] = useState(0);
-
-  const handleAddToCart = () => {
-    setCartCount((prevCount) => prevCount + 1);
-  };
 
   return (
     <div>
       <header>
         <h2>Product Listing</h2>
-        <Button color="success" onClick={() => console.log('Go to cart page')}>Cart ({cartCount})</Button>
       </header>
       {(productsLoad.status === 'loading' && <Spinner />) || (
         <Table className="ps-no-break">
@@ -41,10 +36,19 @@ function ProductListing() {
               <td className="ps-cell ps-right">{product.quantity} in stock</td>
               <td className="ps-cell ps-left">Qty:</td>
               <td className="ps-cell ps-left">
-                <Input type="number" value="1" className="ps-input" />
+          {/* //Need to fix quantitySelected */}
+                <Input
+                  type="number"
+                  value={product.quantitySelected || 1}
+                  className="ps-input"
+                  onChange={(e) => {
+                    const quantitySelected = parseInt(e.target.value, 10);
+                    addToCart({ ...product, quantitySelected });
+                  }}
+                />
               </td>
               <td className="ps-cell ps-left">
-                <Button className="ps-input" color="success" onClick={handleAddToCart}>
+                <Button className="ps-input" color="success" onClick={() => addToCart(product)}>
                   Add to cart
                 </Button>
               </td>
@@ -57,3 +61,5 @@ function ProductListing() {
 }
 
 export default ProductListing;
+
+
