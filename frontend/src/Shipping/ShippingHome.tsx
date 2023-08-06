@@ -1,50 +1,86 @@
-import React, { useState } from 'react';
-import OrderList from './OrderList';
-import Documents from './Documents';
-import { Button } from 'reactstrap';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLoad } from '../custom-hooks';
+import { Button, Input, Label, Spinner } from 'reactstrap';
+import * as api from '../api';
+
+import Packing from './Packing';
+import Invoice from './Invoice';
+import ShippingLabel from './ShippingLabel';
 
 enum Section {
-  ORDERS,
-  DOCUMENTS
+  PACKING,
+  INVOICE,
+  SHIPPING_LABEL,
 }
 
 export default function ShippingHome() {
-  const [currentSection, setCurrentSection] = useState(Section.ORDERS);
-  // State to keep track of which section is currently being displayed.
-  // By default, it is set to the Shipping and Handling Settings section (SHIPPING).
+  const [orders, ordersLoad] = useLoad(() => api.listOrders({}), 0);
+  const [currentSection, setCurrentSection] = useState(Section.PACKING);
+  const [currentOrder, setCurrentOrder] = useState(null);
+
+  if (ordersLoad.status === 'loading') {
+    return <Spinner />;
+  }
+
+  if (!orders) {
+    return <div>Error: Error with connecting to database</div>;
+  }
+
+  function handleSelect(e) {
+    setCurrentOrder(e.target.value);
+  }
+
   return (
     <div>
-      <header>
-        <h2>Shipping</h2>
-        {/* Two Buttons for Shipping Cost and Orders */}
-        <div className="header-buttons">
-          <Button
-            className="header-button ps-personal-space"
-            color={currentSection === Section.ORDERS ? 'success' : 'secondary'}
-            onClick={() => setCurrentSection(Section.ORDERS)}
-          >
-            Orders
-          </Button>
-          <Button
-            className="header-button ps-personal-space"
-            color={
-              currentSection === Section.DOCUMENTS ? 'success' : 'secondary'
-            }
-            onClick={() => setCurrentSection(Section.DOCUMENTS)}
-          >
-            Documents
-          </Button>
-        </div>
-      </header>
+      <h2>Shipping</h2>
+      {/* Shows the currently selected order. 
+        You can select another order from the dropdown or
+        on the "Orders" tab. */}
+      <Label for="orderSelect">
+        Current Order
+      </Label>
+      <Input
+      id="orderSelect"
+      name="select"
+      type="select"
+      onChange={handleSelect}
+      >
+        {orders.map( (order, index) => (
+            <option key={index} value={order.id}>
+              {new Date(order.date_placed!).toLocaleDateString()}: Order for #{order.id}
+            </option>
+          ))}
+      </Input>
       &nbsp;
-      {currentSection === Section.DOCUMENTS ? (
-        <Documents />
+      {/* Right now, the plan is to show the info that will be written
+        on each document, then have the ability to create a printable
+        HTML page for each document. */}
+      <h3>Preview document...</h3>
+      <Button
+        className="header-button ps-personal-space"
+        color={currentSection === Section.PACKING ? 'success' : 'secondary'}
+        onClick={() => setCurrentSection(Section.PACKING)}
+      > Packing List </Button>
+      <Button
+        className="header-button ps-personal-space"
+        color={currentSection === Section.INVOICE ? 'success' : 'secondary'}
+        onClick={() => setCurrentSection(Section.INVOICE)}
+      > Invoice </Button>
+      <Button
+        className="header-button ps-personal-space"
+        color={currentSection === Section.SHIPPING_LABEL ? 'success' : 'secondary'}
+        onClick={() => setCurrentSection(Section.SHIPPING_LABEL)}
+      > Shipping Label </Button>
+      &nbsp;
+      { currentOrder === null ? (
+        <div>Select an order...</div>
+      ) : currentSection === Section.PACKING ? (
+        <Packing curOrder={currentOrder}/>
+      ) : currentSection === Section.INVOICE ? (
+        <p>invoice</p>
       ) : (
-        <>
-          <OrderList />
-        </>
+        <p>shipping</p>
       )}
-      <footer>&nbsp;</footer>
     </div>
   );
 }
