@@ -12,6 +12,15 @@ enum Section {
 
 function CustomerHome() {
   const [currentSection, setCurrentSection] = useState(Section.PRODUCT_LISTING);
+  const [cartItems, setCartItems] = useState([]);
+  // FIX THE TOTAL PRICE FUNCTION
+  const [totalPrice, setTotalPrice] = useState(0);
+
+  const addToCart = (product) => {
+    setCartItems([...cartItems, { ...product, quantitySelected: 1 }]);
+    var curTotal: number = parseFloat(totalPrice) + parseFloat(product.price)
+    setTotalPrice(curTotal);
+  };
 
   return (
     <div>
@@ -33,13 +42,14 @@ function CustomerHome() {
           >
             Cart
           </Button>
+          <Button color="success" onClick={() => console.log('Go to cart page')}>Cart ({cartItems.length})</Button>
         </div>
       </header>
       &nbsp;
       {currentSection === Section.PRODUCT_LISTING ? (
-        <ProductListing />
+        <ProductListing addToCart={addToCart} />
       ) : (
-        <CartPage />
+        <CartPage cartItems={cartItems} totalPrice={totalPrice} />
       )}
       <footer>&nbsp;</footer>
     </div>
