@@ -1,6 +1,7 @@
 // export default CartPage;
 import React, { useState } from 'react';
 import { Table, Button } from 'reactstrap';
+import { createOrder } from '../api';
 
 
 function CartPage({ cartItems, setCartItems, setTotalPrice, totalPrice }) {
@@ -8,8 +9,11 @@ function CartPage({ cartItems, setCartItems, setTotalPrice, totalPrice }) {
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [creditCardNumber, setCreditCardNumber] = useState('');
+  const [orderAuthNumber, setOrderAuthNumber] = useState('');
+  const [orderCompleted, setOrderCompleted] = useState(false); 
+
+
   //TODO Finish the complete order function
-  const [orderCompleted, setOrderCompleted] = useState(false);
   
     const RemoveItem = (productId) => {
     const updatedCart = cartItems.filter((item) => item.id !== productId);
@@ -23,7 +27,42 @@ function CartPage({ cartItems, setCartItems, setTotalPrice, totalPrice }) {
     setCreditCardNumber(newCreditCardNumber);
   };
 
+  const comepleteOrder = async (event) => {
+    console.log('Complete Order button clicked'); // Add this line
 
+    event.preventDefault();
+    try {
+      const orderData = {
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_address: customerAddress,
+        line_items: cartItems.map((item) => ({
+          product_id: item.id,
+          quantity: item.quantitySelected,
+        })),
+        cc_full: {
+          digits: creditCardNumber,
+        },
+        shipping_address: '1234 ginderbread ln,',
+      };
+
+      const response = await createOrder(orderData);
+      setOrderAuthNumber(response.auth_number);
+      setOrderCompleted(true);
+    } catch (error) {
+        console.error('Error creating order:', error);
+    }
+  };
+
+  if (orderCompleted) {
+    return (
+      <div>
+        <h2>Order Complete</h2>
+        <p>Order Auth Number: {orderAuthNumber}</p>
+        <p>Thank you for your purchase!</p>
+      </div>
+    );
+  }
 
 
   return (
@@ -71,7 +110,7 @@ function CartPage({ cartItems, setCartItems, setTotalPrice, totalPrice }) {
         {/* TODO SET PAYMENT AUTHORIZATION WITH DB  */}
         <Button
           color="success"
-          onClick={() => { setOrderCompleted(true); }}
+          onClick={(e) => comepleteOrder(e)}
         >
           Complete Order
         </Button>
