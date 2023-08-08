@@ -14,7 +14,7 @@ enum Section {
 }
 
 export default function ShippingHome() {
-  const [orders, ordersLoad] = useLoad(() => api.listOrders({}), 0);
+  const [orders, ordersLoad] = useLoad(() => api.listOrders({}), 1);
   const [currentSection, setCurrentSection] = useState(Section.PACKING);
   const [currentOrder, setCurrentOrder] = useState(null);
 
