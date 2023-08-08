@@ -22,16 +22,6 @@ const BACKEND_PORT_LOCAL_ONLY = 4000;
       },
     },
   });
-  server.ext('onRequest', (request, h) => {
-    console.log(
-      `Received request ${request.method.toUpperCase()} ${request.url}${
-        ['post', 'put'].includes(request.method)
-          ? ` payload ${JSON.stringify(request.payload)}`
-          : ''
-      }`
-    );
-    return h.continue;
-  });
   await server.register(inert);
   if (agenda) {
     await server.register(

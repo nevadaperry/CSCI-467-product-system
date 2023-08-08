@@ -14,6 +14,16 @@ const http = {
   internalServerError: 500,
 };
 
+async function logRequest(request: hapi.Request) {
+  console.log(
+    `Received request ${request.method.toUpperCase()} ${request.url}${
+      ['post', 'put'].includes(request.method)
+        ? ` payload ${JSON.stringify(request.payload)}}`
+        : ''
+    }`
+  );
+}
+
 function handleEndpointError(h: hapi.ResponseToolkit, e: any) {
   // If an endpoint throws an exception, this allows the user to see it
   return h.response(String(e)).code(http.internalServerError);
@@ -26,6 +36,7 @@ export function generateWrappers(db: pg.Pool) {
     ) {
       return async function (request: hapi.Request, h: hapi.ResponseToolkit) {
         try {
+          logRequest(request);
           const result = await endpoint(db, request.payload as ResourceType);
           if (!result) {
             return h
@@ -44,6 +55,7 @@ export function generateWrappers(db: pg.Pool) {
     ) {
       return async function (request: hapi.Request, h: hapi.ResponseToolkit) {
         try {
+          logRequest(request);
           const result = await endpoint(db, request.params.id);
           if (!result) {
             return h.response(`Couldn't find resource.`).code(http.notFound);
@@ -65,6 +77,7 @@ export function generateWrappers(db: pg.Pool) {
     ) {
       return async function (request: hapi.Request, h: hapi.ResponseToolkit) {
         try {
+          logRequest(request);
           const { existing, update } = request.payload as {
             existing: ResourceType;
             update: ResourceType;
@@ -98,6 +111,7 @@ export function generateWrappers(db: pg.Pool) {
     ) {
       return async function (request: hapi.Request, h: hapi.ResponseToolkit) {
         try {
+          logRequest(request);
           const result = await endpoint(
             db,
             request.params.id,
@@ -122,6 +136,7 @@ export function generateWrappers(db: pg.Pool) {
     ) {
       return async function (request: hapi.Request, h: hapi.ResponseToolkit) {
         try {
+          logRequest(request);
           const result = await endpoint(db, request.query as FilterType);
           if (!result) {
             return h
