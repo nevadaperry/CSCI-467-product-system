@@ -77,7 +77,7 @@ export default function ShippingHome() {
       ) : currentSection === Section.PACKING ? (
         <Packing curOrder={currentOrder}/>
       ) : currentSection === Section.INVOICE ? (
-        <p>invoice</p>
+        <Invoice curOrder={currentOrder}/>
       ) : (
         <p>shipping</p>
       )}
