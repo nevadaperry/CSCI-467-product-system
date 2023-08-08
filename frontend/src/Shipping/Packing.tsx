@@ -10,7 +10,9 @@ function Packing({ curOrder }) {
 	  1
 	);
 
-	if (orderLoad.status === 'loading') {
+	const [shipped, setShipped] = useState(false);
+
+	if (orderLoad.status === 'loading' || feeScheduleLoad.status === 'loading') {
     	return <Spinner />;
   	}
 
@@ -23,6 +25,16 @@ function Packing({ curOrder }) {
 		return <div>Error: Shipping fee info not found</div>;
 	}
 
+	if (order.status === 'shipped') {
+		setShipped(true);
+	}
+
+	function markAsShipped() {
+		if (shipped) return;
+		api.updateOrder(curOrder, order, {...order, status: 'shipped'});
+		setShipped(true);
+	}
+
 	// Calculates the total quantity of items.
 	const calculateQuantity = () => {
 		let amount = 0;
@@ -30,7 +42,7 @@ function Packing({ curOrder }) {
 			amount += item.quantity;
 		});
 		return amount;
-	}
+	};
 
 	// Function to calculate the amount without shipping
 	  const calculateAmountWithoutShipping = () => {
@@ -50,7 +62,7 @@ function Packing({ curOrder }) {
 	    }, 0);
 
 	    return weight;
-	}
+	};
 
 	  // Function to calculate the shipping cost
 	  const calculateShipping = () => {
@@ -71,38 +83,42 @@ function Packing({ curOrder }) {
 	const calculateTotalCost = () => {
 		let total = parseFloat(calculateAmountWithoutShipping()) + parseFloat(calculateShipping());
 		return total;
-	}
+	};
 
 	return (
 		<div>
           <h3>Packing List</h3>
           <Table>
             <thead>
-              <tr key="header"><th>ID</th><th>Product Description</th><th>Weight (lbs)</th><th>Cost (USD)</th><th>Quantity</th></tr>
+              <tr key="header"><th>ID</th><th>Quantity</th><th>Product Description</th><th>Unit Weight<br/>(lbs.)</th><th>Combined<br/>Weight(lbs.)</th></tr>
             </thead>
             <tbody>
             {order.line_items.map( (item, index) => (
                 <tr key={index}><th scope="row">{item.product!.id}</th>
+                	<td>{ item.quantity }</td>
                 	<td>{ item.product!.description }</td>
                 	<td>{ item.product!.weight }</td>
-                	<td>{ item.product!.price }</td>
-                	<td>{ item.quantity }</td>
+                	<td>{ item.product!.weight * item.quantity }</td>
                 </tr>
               ))}
-            	<tr key="totals"><th scope="row"></th>
-   					<td><i>Totals:</i></td>
-   					<td>{ calculateWeight() }</td>
-   					<td>{ calculateAmountWithoutShipping() }</td>
-   					<td>{ calculateQuantity() }</td>
+            	<tr key="totals"><th scope="row"><i>Totals:</i></th>
+   					<td><i>{ calculateQuantity() }</i></td>
+   					<td>-----</td>
+   					<td>-----</td>
+   					<td><i>{ calculateWeight() }</i></td>
    				</tr>
             </tbody>
           </Table>
-          <h4>Shipping Cost: ${ calculateShipping() }&emsp;&emsp;Total Cost: ${ calculateTotalCost() }</h4>
           <Button
 	        className="header-button ps-personal-space"
 	        color='success'
 	        onClick={() => window.open("https://google.com")}
-	      > Print </Button>
+	      >Print</Button>
+	      <Button
+	        className="header-button ps-personal-space"
+	        color={shipped ? 'secondary' : 'success'}
+	        onClick={() => markAsShipped()}
+	      >{shipped ? "Shipped!" : "Mark as Shipped"}</Button>
         </div>
 	);
 }
