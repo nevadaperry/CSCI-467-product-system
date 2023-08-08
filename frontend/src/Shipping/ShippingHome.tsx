@@ -79,7 +79,7 @@ export default function ShippingHome() {
       ) : currentSection === Section.INVOICE ? (
         <Invoice curOrder={currentOrder}/>
       ) : (
-        <p>shipping</p>
+        <ShippingLabel curOrder={currentOrder}/>
       )}
     </div>
   );

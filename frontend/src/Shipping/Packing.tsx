@@ -25,6 +25,7 @@ function Packing({ curOrder }) {
 		return <div>Error: Shipping fee info not found</div>;
 	}
 
+	//TODO: make React not angry at this (throws re-render error when order is shipped)
 	if (order.status === 'shipped') {
 		setShipped(true);
 	}
