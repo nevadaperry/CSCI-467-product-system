@@ -32,7 +32,10 @@ function handleEndpointError(h: hapi.ResponseToolkit, e: any) {
 export function generateWrappers(db: pg.Pool) {
   return {
     wrapCreate: function <ResourceType>(
-      endpoint: (db: pg.Pool, payload: ResourceType) => Promise<CreateResult>
+      endpoint: (
+        db: pg.Pool,
+        payload: ResourceType
+      ) => Promise<CreateResult<ResourceType>>
     ) {
       return async function (request: hapi.Request, h: hapi.ResponseToolkit) {
         try {

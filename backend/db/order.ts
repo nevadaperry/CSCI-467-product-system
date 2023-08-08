@@ -104,7 +104,7 @@ export async function createOrder(db: pg.Pool, order: Order) {
 
   const {
     rows: [createResult],
-  } = await db.query<CreateResult>(SQL`
+  } = await db.query<CreateResult<Order>>(SQL`
     WITH new_order_state AS (
       INSERT INTO order_state (
         order_id,
@@ -183,7 +183,7 @@ Total price: ${orderMeta.total_price}`;
     }
   })();
 
-  return createResult;
+  return { ...createResult, auth_number: paymentResult.authorization };
 }
 
 export async function readOrder(db: pg.Pool, id: number) {

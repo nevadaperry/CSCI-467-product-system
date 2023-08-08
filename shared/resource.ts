@@ -1,6 +1,6 @@
-export interface CreateResult {
+export type CreateResult<T> = {
   id: number;
-}
+} & Partial<T>;
 export interface UpdateResult {
   exists: boolean;
   success: boolean;
