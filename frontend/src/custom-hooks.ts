@@ -1,23 +1,26 @@
 import { useEffect, useState } from 'react';
 
 export interface LoadState {
-  status?: 'loading' | 'finished' | 'errored';
+  status?: 'waiting for trigger' | 'loading' | 'finished' | 'errored';
   error?: any;
 }
 
 export function useLoad<T>(
   loader: () => Promise<T>,
   /**
-   * If you specify this, useLoad will re-run each time the trigger number
-   * changes.
+   * useLoad will run each time the trigger changes to something truthy.
    */
-  trigger?: number
+  trigger: any
 ): [T | undefined, LoadState] {
   const [resource, setResource] = useState<T>();
   const [resourceLoad, setResourceLoad] = useState<LoadState>({
     status: 'loading',
   });
   useEffect(() => {
+    if (!trigger) {
+      setResourceLoad({ status: 'waiting for trigger' });
+      return;
+    }
     setResourceLoad({ status: 'loading' });
     (async () => {
       try {

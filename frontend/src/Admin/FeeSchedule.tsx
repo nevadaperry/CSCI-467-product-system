@@ -1,13 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Input, Label, Spinner, Toast } from 'reactstrap';
+import React, { useMemo, useState } from 'react';
+import { Button, Input, Label, Spinner } from 'reactstrap';
 import { useLoad } from '../custom-hooks';
 import * as api from '../api';
-import { FeeSchedule as FeeScheduleResource } from '../../../shared/resource';
 
 export default function FeeSchedule() {
   // Goal: Avoid focus-stealing or otherwise changing the visible data when
   // the user wouldn't expect it.
-  const [refreshOrdinal, setRefreshOrdinal] = useState(0);
+  const [refreshOrdinal, setRefreshOrdinal] = useState(1);
   const [existingFS, existingFSLoad] = useLoad(
     api.readFeeSchedule,
     refreshOrdinal
@@ -17,7 +16,7 @@ export default function FeeSchedule() {
       return existingFS;
     }
     return undefined;
-  }, [existingFSLoad]);
+  }, [existingFS, existingFSLoad]);
 
   const visibleWBs = useMemo(() => {
     if (!visibleFS) return undefined;
@@ -43,7 +42,7 @@ export default function FeeSchedule() {
   function addWeightBracket() {
     (async () => {
       try {
-        const result = await api.updateFeeSchedule(existingFS!, {
+        await api.updateFeeSchedule(existingFS!, {
           weight_brackets: visibleFS!.weight_brackets.concat({
             lower_bound: newLowerBound,
             fee: newFee,
@@ -62,7 +61,7 @@ export default function FeeSchedule() {
 
   function removeWeightBracket(index: number) {
     (async () => {
-      const result = await api.updateFeeSchedule(existingFS!, {
+      await api.updateFeeSchedule(existingFS!, {
         weight_brackets: [
           ...visibleFS!.weight_brackets.slice(0, index),
           ...visibleFS!.weight_brackets.slice(index + 1),

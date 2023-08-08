@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as api from '../api';
 import moment from 'moment';
 import { useLoad } from '../custom-hooks';
@@ -45,14 +45,14 @@ function OrderListing() {
         : priceUpperBound,
     };
   }, [dateRanges, statusFilter, priceLowerBound, priceUpperBound]);
-  const [refreshOrdinal, setRefreshOrdinal] = useState(0);
+  const refreshOrdinal = useRef(1);
   const [orders, ordersLoad] = useLoad(
     () => api.listOrders(filters),
-    refreshOrdinal
+    refreshOrdinal.current
   ); // Fetch orders from the API
   const [selectedOrderId, setSelectedOrderId] = useState(null); // State to store the selected orderId
   useEffect(() => {
-    setRefreshOrdinal(refreshOrdinal + 1);
+    refreshOrdinal.current++;
   }, [filters]);
 
   // Function to handle opening the details modal
@@ -89,61 +89,71 @@ function OrderListing() {
           </ModalBody>
         </Modal>
         <Table>
-          <tr>
-            <td>
-              <Button
-                onClick={() => setDateModalIsOpen(true)}
-                color="secondary"
-              >
-                Select date range [
-                {moment(filters.date_lower_bound).format('M/D/YYYY')} to{' '}
-                {moment(filters.date_upper_bound).format('M/D/YYYY')}]
-              </Button>
-            </td>
-            <td>
-              <Dropdown
-                isOpen={statusFilterIsOpen}
-                toggle={() => setStatusFilterIsOpen(!statusFilterIsOpen)}
-              >
-                <DropdownToggle caret>
-                  Status filter [{statusFilter ? statusFilter : 'any'}]
-                </DropdownToggle>
-                <DropdownMenu>
-                  <DropdownItem onClick={() => setStatusFilter(undefined)}>
-                    Any
-                  </DropdownItem>
-                  <DropdownItem onClick={() => setStatusFilter('authorized')}>
-                    Authorized
-                  </DropdownItem>
-                  <DropdownItem onClick={() => setStatusFilter('shipped')}>
-                    Shipped
-                  </DropdownItem>
-                </DropdownMenu>
-              </Dropdown>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <Label className="ps-inline-flex">Price lower bound:&nbsp;</Label>
-              <Input
-                className="ps-inline-flex"
-                type="number"
-                step="0.01"
-                value={priceLowerBound}
-                onChange={(e) => setPriceLowerBound(parseFloat(e.target.value))}
-              />
-            </td>
-            <td>
-              <Label className="ps-inline-flex">Price upper bound:&nbsp;</Label>
-              <Input
-                className="ps-inline-flex"
-                type="number"
-                step="0.01"
-                value={priceUpperBound}
-                onChange={(e) => setPriceUpperBound(parseFloat(e.target.value))}
-              />
-            </td>
-          </tr>
+          <tbody>
+            <tr>
+              <td>
+                <Button
+                  onClick={() => setDateModalIsOpen(true)}
+                  color="secondary"
+                >
+                  Select date range [
+                  {moment(filters.date_lower_bound).format('M/D/YYYY')} to{' '}
+                  {moment(filters.date_upper_bound).format('M/D/YYYY')}]
+                </Button>
+              </td>
+              <td>
+                <Dropdown
+                  isOpen={statusFilterIsOpen}
+                  toggle={() => setStatusFilterIsOpen(!statusFilterIsOpen)}
+                >
+                  <DropdownToggle caret>
+                    Status filter [{statusFilter ? statusFilter : 'any'}]
+                  </DropdownToggle>
+                  <DropdownMenu>
+                    <DropdownItem onClick={() => setStatusFilter(undefined)}>
+                      Any
+                    </DropdownItem>
+                    <DropdownItem onClick={() => setStatusFilter('authorized')}>
+                      Authorized
+                    </DropdownItem>
+                    <DropdownItem onClick={() => setStatusFilter('shipped')}>
+                      Shipped
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <Label className="ps-inline-flex">
+                  Price lower bound:&nbsp;
+                </Label>
+                <Input
+                  className="ps-inline-flex"
+                  type="number"
+                  step="0.01"
+                  value={priceLowerBound}
+                  onChange={(e) =>
+                    setPriceLowerBound(parseFloat(e.target.value))
+                  }
+                />
+              </td>
+              <td>
+                <Label className="ps-inline-flex">
+                  Price upper bound:&nbsp;
+                </Label>
+                <Input
+                  className="ps-inline-flex"
+                  type="number"
+                  step="0.01"
+                  value={priceUpperBound}
+                  onChange={(e) =>
+                    setPriceUpperBound(parseFloat(e.target.value))
+                  }
+                />
+              </td>
+            </tr>
+          </tbody>
         </Table>
       </header>
       {ordersLoad.status === 'loading' ? (

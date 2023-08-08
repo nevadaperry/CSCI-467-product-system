@@ -11,7 +11,10 @@ import { useLoad } from '../custom-hooks';
 import * as api from '../api'; // Import the api file
 function OrderDetails({ isOpen, toggleModal, orderId }) {
   const [order, orderLoad] = useLoad(() => api.readOrder(orderId), orderId); // Fetch order details from the API
-  const [feeSchedule, feeScheduleLoad] = useLoad(() => api.readFeeSchedule()); // Fetch fee schedule from the API
+  const [feeSchedule, feeScheduleLoad] = useLoad(
+    () => api.readFeeSchedule(),
+    1
+  ); // Fetch fee schedule from the API
   if (!isOpen) {
     // If the modal is not open, don't render anything
     return null;
