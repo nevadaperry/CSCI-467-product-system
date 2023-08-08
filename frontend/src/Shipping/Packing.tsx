@@ -5,25 +5,10 @@ import * as api from '../api';
 
 function Packing({ curOrder }) {
 	const [order, orderLoad] = useLoad(() => api.readOrder(curOrder), curOrder);
-
-	const [totalWeight, setTotalWeight] = useState(0);
-	const [totalPrice, setTotalPrice] = useState(0);
-	const [totalQty, setTotalQty] = useState(0);
-
-	function updateTotalWeight(weight) {
-		var newTotal: number = parseFloat(totalWeight) + parseFloat(weight);
-		setTotalWeight(newTotal);
-	}
-
-	function updateTotalPrice(price) {
-		var newTotal: number = parseFloat(totalPrice) + parseFloat(price);
-		setTotalPrice(newTotal);
-	}
-
-	function updateTotalQty(qty) {
-		var newTotal: number = parseFloat(totalQty) + parseFloat(qty);
-		setTotalQty(newTotal);
-	}
+	const [feeSchedule, feeScheduleLoad] = useLoad(
+	  () => api.readFeeSchedule(),
+	  1
+	);
 
 	if (orderLoad.status === 'loading') {
     	return <Spinner />;
@@ -33,6 +18,60 @@ function Packing({ curOrder }) {
     	// If order is not available, show an error message or handle it accordingly
     	return <div>Error: Order not found.</div>;
   	}
+  	if (!feeSchedule) {
+		// If fee schedule is not available, show an error message or handle it accordingly
+		return <div>Error: Shipping fee info not found</div>;
+	}
+
+	// Calculates the total quantity of items.
+	const calculateQuantity = () => {
+		let amount = 0;
+		order.line_items.forEach((item) => {
+			amount += item.quantity;
+		});
+		return amount;
+	}
+
+	// Function to calculate the amount without shipping
+	  const calculateAmountWithoutShipping = () => {
+	    let amount = 0;
+
+	    order.line_items.forEach((item) => {
+	      amount += item.product!.price * item.quantity;
+	    });
+
+	    return amount.toFixed(2);
+	  };
+
+	// Calculates total weight of all items.
+	const calculateWeight = () => {
+		const weight = order.line_items.reduce((totalWeight, item) => {
+	      	return totalWeight + item.product!.weight * item.quantity;
+	    }, 0);
+
+	    return weight;
+	}
+
+	  // Function to calculate the shipping cost
+	  const calculateShipping = () => {
+	    let shipping = 0;
+	    const weight = calculateWeight();
+
+	    // Find the relevant shipping fee from the fee schedule
+	    feeSchedule.weight_brackets.forEach((bracket) => {
+	      if (weight >= bracket.lower_bound) {
+	        shipping = bracket.fee;
+	      }
+	    });
+
+	    return shipping.toFixed(2);
+	  };
+
+	// Calculates total cost.
+	const calculateTotalCost = () => {
+		let total = parseFloat(calculateAmountWithoutShipping()) + parseFloat(calculateShipping());
+		return total;
+	}
 
 	return (
 		<div>
@@ -50,8 +89,20 @@ function Packing({ curOrder }) {
                 	<td>{ item.quantity }</td>
                 </tr>
               ))}
+            	<tr key="totals"><th scope="row"></th>
+   					<td><i>Totals:</i></td>
+   					<td>{ calculateWeight() }</td>
+   					<td>{ calculateAmountWithoutShipping() }</td>
+   					<td>{ calculateQuantity() }</td>
+   				</tr>
             </tbody>
           </Table>
+          <h4>Shipping Cost: ${ calculateShipping() }&emsp;&emsp;Total Cost: ${ calculateTotalCost() }</h4>
+          <Button
+	        className="header-button ps-personal-space"
+	        color='success'
+	        onClick={() => window.open("https://google.com")}
+	      > Print </Button>
         </div>
 	);
 }

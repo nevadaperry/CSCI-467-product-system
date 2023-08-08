@@ -47,7 +47,7 @@ export default function ShippingHome() {
       >
         {orders.map( (order, index) => (
             <option key={index} value={order.id}>
-              {new Date(order.date_placed!).toLocaleDateString()}: Order for #{order.id}
+              {new Date(order.date_placed!).toLocaleDateString()}: Order #{order.id}
             </option>
           ))}
       </Input>
