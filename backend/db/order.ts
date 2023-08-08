@@ -293,7 +293,7 @@ export async function updateOrder(
           product_id bigint,
           quantity bigint
         )
-      JOIN product_state
+      JOIN product_state ps
         ON line_item.product_id = ps.product_id
         AND ps.is_latest = true
         AND ps.deleted = false
@@ -304,9 +304,8 @@ export async function updateOrder(
       CROSS JOIN LATERAL (
         SELECT wb.fee
         FROM fee_schedule_state fss
-        JOIN weight_bracket wb ON wb.fee_schedule_state_id = efss.id
+        JOIN weight_bracket wb ON wb.fee_schedule_state_id = fss.id
         WHERE fss.is_latest = true
-          AND fss.deleted = false
           AND wb.lower_bound < stats_1.total_weight
         ORDER BY wb.lower_bound DESC
         LIMIT 1
