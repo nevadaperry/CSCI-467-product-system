@@ -13,7 +13,7 @@ export async function upsertCustomer(db: pg.Pool, customer: Customer) {
   // of overwriting state on email conflict / name update
   const {
     rows: [result],
-  } = await db.query<CreateResult>(SQL`
+  } = await db.query<CreateResult<Customer>>(SQL`
     WITH new_customer AS (
       INSERT INTO customer DEFAULT VALUES
       RETURNING id

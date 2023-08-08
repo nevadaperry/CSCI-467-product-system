@@ -11,7 +11,7 @@ import {
 export async function createProduct(db: pg.Pool, product: Product) {
   const {
     rows: [result],
-  } = await db.query<CreateResult>(SQL`
+  } = await db.query<CreateResult<Product>>(SQL`
     WITH new_product AS (
       INSERT INTO product DEFAULT VALUES
       RETURNING id

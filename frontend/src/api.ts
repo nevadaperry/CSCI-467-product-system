@@ -29,7 +29,7 @@ function handleApiResponse<T>(response: AxiosResponse<T>) {
 
 export async function createProduct(product: Product) {
   return handleApiResponse(
-    await axios.post<CreateResult>(`${apiUrl}/product`, product)
+    await axios.post<CreateResult<Product>>(`${apiUrl}/product`, product)
   );
 }
 export async function readProduct(id: number) {
@@ -62,7 +62,7 @@ export async function listProducts(filters: ProductFilters) {
 
 export async function createCustomer(customer: Customer) {
   return handleApiResponse(
-    await axios.post<CreateResult>(`${apiUrl}/customer`, customer)
+    await axios.post<CreateResult<Customer>>(`${apiUrl}/customer`, customer)
   );
 }
 export async function readCustomer(id: number) {
@@ -99,7 +99,7 @@ export async function listCustomers(filters: CustomerFilters) {
 
 export async function createOrder(order: Order) {
   return handleApiResponse(
-    await axios.post<CreateResult>(`${apiUrl}/order`, order)
+    await axios.post<CreateResult<Order>>(`${apiUrl}/order`, order)
   );
 }
 export async function readOrder(id: number) {
