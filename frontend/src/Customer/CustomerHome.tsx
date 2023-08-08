@@ -13,8 +13,9 @@ enum Section {
 function CustomerHome() {
   const [currentSection, setCurrentSection] = useState(Section.PRODUCT_LISTING);
   const [cartItems, setCartItems] = useState([]);
-  // FIX THE TOTAL PRICE FUNCTION
   const [totalPrice, setTotalPrice] = useState(0);
+  const [orderCompleted, setOrderCompleted] = useState(false); // Add this line
+
 
   const addToCart = (product) => {
     setCartItems([...cartItems, { ...product, quantitySelected: 1 }]);
@@ -49,7 +50,7 @@ function CustomerHome() {
       {currentSection === Section.PRODUCT_LISTING ? (
         <ProductListing addToCart={addToCart} />
       ) : (
-        <CartPage cartItems={cartItems} totalPrice={totalPrice} />
+        <CartPage cartItems={cartItems} totalPrice={totalPrice} setCartItems={setCartItems} setTotalPrice={setTotalPrice} orderCompleted={orderCompleted}  setOrderCompleted={setOrderCompleted} />
       )}
       <footer>&nbsp;</footer>
     </div>

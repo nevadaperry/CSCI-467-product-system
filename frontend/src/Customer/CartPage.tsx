@@ -1,16 +1,70 @@
 // export default CartPage;
 import React, { useState } from 'react';
 import { Table, Button } from 'reactstrap';
+import { createOrder } from '../api';
 
 
-function CartPage({ cartItems, totalPrice }) {
+function CartPage({ cartItems, setCartItems, setTotalPrice, totalPrice }) {
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [creditCardNumber, setCreditCardNumber] = useState('');
-  //TODO PUT THIS TO USE!!
-  const [orderCompleted, setOrderCompleted] = useState(false);
-  // TODO ADD REMOVE FUNCTION TO THE TABLE AND DB
+  const [orderAuthNumber, setOrderAuthNumber] = useState('');
+  const [orderCompleted, setOrderCompleted] = useState(false); 
+
+
+  //TODO Finish the complete order function
+  
+    const RemoveItem = (productId) => {
+    const updatedCart = cartItems.filter((item) => item.id !== productId);
+    setCartItems(updatedCart);
+    const newTotalPrice = updatedCart.reduce((total, item) => total + item.price * item.quantitySelected, 0);
+    setTotalPrice(newTotalPrice);
+  };
+
+  const CreditCardNumberChange = (e) => {
+    const newCreditCardNumber = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setCreditCardNumber(newCreditCardNumber);
+  };
+
+  const comepleteOrder = async (event) => {
+    console.log('Complete Order button clicked'); // Add this line
+
+    event.preventDefault();
+    try {
+      const orderData = {
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_address: customerAddress,
+        line_items: cartItems.map((item) => ({
+          product_id: item.id,
+          quantity: item.quantitySelected,
+        })),
+        cc_full: {
+          digits: creditCardNumber,
+        },
+        shipping_address: '1234 ginderbread ln,',
+      };
+
+      const response = await createOrder(orderData);
+      setOrderAuthNumber(response.auth_number);
+      setOrderCompleted(true);
+    } catch (error) {
+        console.error('Error creating order:', error);
+    }
+  };
+
+  if (orderCompleted) {
+    return (
+      <div>
+        <h2>Order Complete</h2>
+        <p>Order Auth Number: {orderAuthNumber}</p>
+        <p>Thank you for your purchase!</p>
+      </div>
+    );
+  }
+
+
   return (
     <div>
       <h2>Cart Items</h2>
@@ -23,20 +77,21 @@ function CartPage({ cartItems, totalPrice }) {
           </tr>
         </thead>
         <tbody>
-          {/* //Need to fix quantitySelected so that user can select how many they want */}
           {cartItems.map((item) => (
             <tr key={item.id}>
               <td>{item.description}</td>
               <td>{item.quantitySelected}</td>
               <td>${item.price * item.quantitySelected}</td>
+              <td>
+                <Button color="danger" onClick={() => RemoveItem(item.id)}> Remove</Button>
+                </td>
             </tr>
           ))}
         </tbody>
       </Table>
-      <p>Total Price: ${totalPrice}</p>
+      <p>Total Price: ${totalPrice.toFixed(2)}</p>
       <form>
         <div>
-          
           <label>Name:</label>
           <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
         </div>
@@ -49,18 +104,13 @@ function CartPage({ cartItems, totalPrice }) {
           <input type="text" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} />
         </div>
         <div>
-          {/* TODO Put a on credit card number limit using luhn algorithm */}
           <label>Credit Card Number:</label>
-          <input type="text" value={creditCardNumber} onChange={(e) => setCreditCardNumber(e.target.value)} />
+          <input type="text" value={creditCardNumber} onChange={CreditCardNumberChange} maxLength ="10" />
         </div>
         {/* TODO SET PAYMENT AUTHORIZATION WITH DB  */}
         <Button
           color="success"
-          onClick={() => {
-            // Call a function to handle credit card authorization
-            // For simplicity, let's assume the order is authorized here
-            setOrderCompleted(true);
-          }}
+          onClick={(e) => comepleteOrder(e)}
         >
           Complete Order
         </Button>

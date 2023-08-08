@@ -19,7 +19,10 @@ export interface Product {
   price: number;
   quantity: number;
 }
-export interface ProductFilters {}
+export interface ProductFilters {
+  id?: string;
+  description?: string;
+}
 
 export interface Customer {
   id?: number;

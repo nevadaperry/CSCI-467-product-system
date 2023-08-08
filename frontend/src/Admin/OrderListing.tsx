@@ -39,8 +39,10 @@ function OrderListing() {
       date_lower_bound: dateRanges[0]?.startDate,
       date_upper_bound: dateRanges[0]?.endDate,
       status: statusFilter,
-      price_lower_bound: priceLowerBound,
-      price_upper_bound: priceUpperBound,
+      price_lower_bound: Number.isNaN(priceLowerBound) ? 0 : priceLowerBound,
+      price_upper_bound: Number.isNaN(priceUpperBound)
+        ? 477777
+        : priceUpperBound,
     };
   }, [dateRanges, statusFilter, priceLowerBound, priceUpperBound]);
   const [refreshOrdinal, setRefreshOrdinal] = useState(0);
@@ -93,9 +95,9 @@ function OrderListing() {
                 onClick={() => setDateModalIsOpen(true)}
                 color="secondary"
               >
-                Select date range (currently{' '}
-                {moment(filters.date_lower_bound).format('YYYY-MM-DD')} to{' '}
-                {moment(filters.date_upper_bound).format('YYYY-MM-DD')})
+                Select date range [
+                {moment(filters.date_lower_bound).format('M/D/YYYY')} to{' '}
+                {moment(filters.date_upper_bound).format('M/D/YYYY')}]
               </Button>
             </td>
             <td>
@@ -104,8 +106,7 @@ function OrderListing() {
                 toggle={() => setStatusFilterIsOpen(!statusFilterIsOpen)}
               >
                 <DropdownToggle caret>
-                  Status filter (currently {statusFilter ? statusFilter : 'any'}
-                  )
+                  Status filter [{statusFilter ? statusFilter : 'any'}]
                 </DropdownToggle>
                 <DropdownMenu>
                   <DropdownItem onClick={() => setStatusFilter(undefined)}>

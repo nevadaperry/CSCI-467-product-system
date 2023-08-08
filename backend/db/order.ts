@@ -1,5 +1,5 @@
 import * as pg from 'pg';
-import * as nodemailer from 'nodemailer';
+import { MailtrapClient } from 'mailtrap';
 import SQL from 'pg-template-tag';
 import {
   CreateResult,
@@ -122,9 +122,7 @@ export async function createOrder(db: pg.Pool, order: Order) {
         ${order.cc_full!.digits.slice(-4)},
         ${order.shipping_address},
         'authorized',
-        -- TODO(nevada): Fix this so it doesn't return the year 55432-MM-DD
-        --to_timestamp(${/*paymentResult.timeStamp*/ ''})
-        now()
+        to_timestamp(${paymentResult.timeStamp} / 1000.0)
       )
       RETURNING id, order_id
     ), associated_line_item AS (
@@ -151,38 +149,39 @@ export async function createOrder(db: pg.Pool, order: Order) {
   `);
 
   // TODO(nevada): Make this a job enqueue to improve durability
-  try {
-    if (!process.env.MAILTRAP_USERNAME || !process.env.MAILTRAP_PASSWORD) {
-      throw new Error(
-        `Missing MAILTRAP_USERNAME or MAILTRAP_PASSWORD in createOrder(). Order confirmation email will not be sent.`
-      );
-    }
-    const transport = nodemailer.createTransport({
-      host: 'sandbox.smtp.mailtrap.io',
-      port: 2525,
-      auth: {
-        user: process.env.MAILTRAP_USERNAME,
-        pass: process.env.MAILTRAP_PASSWORD,
-      },
-    });
-    // TODO(nevada) get the payment date from paymentResult.timeStamp
-    const body = `
-Your order #${orderMeta.id} is confirmed.
+  (async () => {
+    try {
+      if (!process.env.MAILTRAP_TOKEN) {
+        throw new Error(
+          `Missing MAILTRAP_TOKEN in createOrder(). Order confirmation email will not be sent.`
+        );
+      }
+      const mailtrapClient = new MailtrapClient({
+        endpoint: 'https://send.api.mailtrap.io/',
+        token: process.env.MAILTRAP_TOKEN,
+      });
+      const emailText = `Your order #${orderMeta.id} is confirmed.
 Shipping address: ${order.shipping_address}
 Date placed: ${new Date()}
 Line items: ${(JSON.stringify(order.line_items), null, 2)}
-Total price: ${orderMeta.total_price}
-`;
-    // async
-    transport.sendMail({
-      to: order.customer_email,
-      subject: 'Order confirmed!',
-      text: body,
-      html: body,
-    });
-  } catch (e) {
-    console.error(e);
-  }
+Total price: ${orderMeta.total_price}`;
+      await mailtrapClient.send({
+        from: {
+          email: 'mailtrap@productsystem.store',
+          name: 'Product System',
+        },
+        to: [
+          {
+            email: order.customer_email!,
+          },
+        ],
+        subject: 'Order confirmed!',
+        text: emailText,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  })();
 
   return createResult;
 }
@@ -238,7 +237,8 @@ export async function readOrder(db: pg.Pool, id: number) {
       os.status,
       os.date_placed,
       stats_1.line_items,
-      stats_2.total_price,
+      --stats_2.total_price,
+      os.total_price,
       cs.name as customer_name,
       cs.email as customer_email
     FROM order_state os
@@ -361,39 +361,39 @@ export async function updateOrder(
 
   if (existing.status === 'authorized' && update.status === 'shipped') {
     // TODO(nevada): Make this a job enqueue to improve durability
-    try {
-      if (!process.env.MAILTRAP_USERNAME || !process.env.MAILTRAP_PASSWORD) {
-        throw new Error(
-          `Missing MAILTRAP_USERNAME or MAILTRAP_PASSWORD in createOrder(). Order shipped email will not be sent.`
-        );
-      }
-      const transport = nodemailer.createTransport({
-        host: 'sandbox.smtp.mailtrap.io',
-        port: 2525,
-        auth: {
-          user: process.env.MAILTRAP_USERNAME,
-          pass: process.env.MAILTRAP_PASSWORD,
-        },
-      });
-      // TODO(nevada) get the payment date from paymentResult.timeStamp
-      const body = `
-Your order #${id} has been shipped!
+    (async () => {
+      try {
+        if (!process.env.MAILTRAP_TOKEN) {
+          throw new Error(
+            `Missing MAILTRAP_TOKEN in createOrder(). Order confirmation email will not be sent.`
+          );
+        }
+        const mailtrapClient = new MailtrapClient({
+          endpoint: 'https://send.api.mailtrap.io/',
+          token: process.env.MAILTRAP_TOKEN,
+        });
+        const emailText = `Your order #${id} has been shipped!
 Shipping address: ${update.shipping_address}
 Date placed: ${update.date_placed}
 Line items: ${(JSON.stringify(update.line_items), null, 2)}
-Total price: ${update.total_price}
-`;
-      // async
-      transport.sendMail({
-        // TODO streamline this so comes from the db query above
-        to: update.customer_email,
-        subject: 'Order shipped!',
-        text: body,
-        html: body,
-      });
-    } catch (e) {
-      console.error(e);
-    }
+Total price: ${update.total_price}`;
+        await mailtrapClient.send({
+          from: {
+            email: 'mailtrap@productsystem.store',
+            name: 'Product System',
+          },
+          to: [
+            {
+              email: update.customer_email!,
+            },
+          ],
+          subject: 'Order shipped!',
+          text: emailText,
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    })();
   }
 
   return result;
@@ -452,7 +452,8 @@ export async function listOrders(db: pg.Pool, filters: OrderFilters) {
       os.status,
       os.date_placed,
       stats_1.line_items,
-      stats_2.total_price
+      --stats_2.total_price
+      os.total_price
     FROM order_state os
     JOIN "order" o ON os.order_id = o.id
     JOIN stats_1 ON stats_1.order_id = o.id
@@ -463,8 +464,10 @@ export async function listOrders(db: pg.Pool, filters: OrderFilters) {
       }::order_status[])
       AND os.total_price >= ${filters.price_lower_bound ?? 0}
       AND os.total_price <= ${filters.price_upper_bound ?? 999999999.99}
-      AND os.date_placed >= ${filters.date_lower_bound ?? '1900-01-01'}
-      AND os.date_placed <= ${filters.date_upper_bound ?? '9999-12-31'}
+      AND date_trunc('day', os.date_placed)
+        >= date_trunc('day', ${filters.date_lower_bound ?? '1900-01-01'}::date)
+      AND date_trunc('day', os.date_placed)
+        <= date_trunc('day', ${filters.date_upper_bound ?? '9999-12-31'}::date)
       AND os.deleted = false
     ORDER BY o.id ASC
   `);
