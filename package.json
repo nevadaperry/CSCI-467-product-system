@@ -65,6 +65,7 @@
     "react-dom": "^18.2.0",
     "react-refresh": "^0.11.0",
     "react-router-dom": "^6.14.2",
+    "react-to-print": "^2.14.13",
     "reactstrap": "^8.10.1",
     "resolve": "^1.20.0",
     "resolve-url-loader": "^4.0.0",

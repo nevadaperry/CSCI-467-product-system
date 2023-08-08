@@ -9,6 +9,7 @@ import Home from './Home';
 import CustomerHome from './Customer/CustomerHome';
 import AdminHome from './Admin/AdminHome';
 import ShippingHome from './Shipping/ShippingHome';
+import InvoicePrint from './Shipping/Printables/InvoicePrint';
 import ReceivingHome from './Receiving/ReceivingHome';
 import React from 'react';
 import { Nav, NavItem, NavLink } from 'reactstrap';

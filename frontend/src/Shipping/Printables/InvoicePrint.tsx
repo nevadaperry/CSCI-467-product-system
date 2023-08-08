@@ -1,22 +1,16 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { useLoad } from '../custom-hooks';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Table, Input, Label, Spinner } from 'reactstrap';
-import { ReactToPrint, useReactToPrint } from 'react-to-print';
-import * as api from '../api';
+import { useLoad } from '../../custom-hooks';
+import * as api from '../../api';
 
-import InvoicePrint from './Printables/InvoicePrint';
+const InvoicePrint = React.forwardRef((props, ref) => {
+	const {curOrder, ...otherProps} = props;
 
-const Invoice = ({curOrder}) => {
 	const [order, orderLoad] = useLoad(() => api.readOrder(curOrder), curOrder);
 	const [feeSchedule, feeScheduleLoad] = useLoad(
 	  () => api.readFeeSchedule(),
 	  1
 	);
-
-	const componentRef = useRef();
-  const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
-  });
 
 	const [shipped, setShipped] = useState(false);
 
@@ -84,40 +78,38 @@ const Invoice = ({curOrder}) => {
 	};
 
 	return (
-		<div>
-      <h3>Invoice</h3>
-      <Table>
-        <thead>
-          <tr key="header"><th>ID</th><th>Quantity</th><th>Product Description</th><th>Unit Cost<br/>(USD)</th><th>Combined<br/>Cost(USD)</th></tr>
-        </thead>
-        <tbody>
-        	{order.line_items.map( (item, index) => (
-            <tr key={index}><th scope="row">{item.product!.id}</th>
-            	<td>{ item.quantity }</td>
-            	<td>{ item.product!.description }</td>
-            	<td>{ item.product!.price }</td>
-            	<td>{ item.product!.price * item.quantity }</td>
-            </tr>
-          ))}
-        	<tr key="totals"><th scope="row"><i>Totals:</i></th>
+		<div style={{ margin: 20 }} ref={ref}>
+			<h1>Product System</h1>
+			<p><i>Your source for all things automotive.</i></p>
+			<h2>Invoice</h2>
+  			<h3>Bill To:</h3>
+  			<p>{ order.customer_name! }<br/>{ order.shipping_address! }</p>
+  			<Table>
+    			<thead>
+      				<tr key="header"><th>ID</th><th>Quantity</th><th>Product Description</th><th>Unit Cost<br/>(USD)</th><th>Combined<br/>Cost(USD)</th></tr>
+    			</thead>
+    			<tbody>
+    				{order.line_items.map( (item, index) => (
+			        <tr key={index}><th scope="row">{item.product!.id}</th>
+			        	<td>{ item.quantity }</td>
+			        	<td>{ item.product!.description }</td>
+			        	<td>{ item.product!.price }</td>
+			        	<td>{ item.product!.price * item.quantity }</td>
+			        </tr>
+      				))}
+    				<tr key="totals"><th scope="row"><i>Totals:</i></th>
 						<td><i>{ calculateQuantity() }</i></td>
 						<td>-----</td>
 						<td>-----</td>
 						<td><i>{ calculateAmountWithoutShipping() }</i></td>
 					</tr>
-        </tbody>
-      </Table>
-      <h4>Shipping: ${ calculateShipping() }&emsp;&emsp;Total Cost: ${ calculateTotalCost() }</h4>
-      <h4>Bill To:</h4>
-      <p>{ order.customer_name! }<br/>{ order.shipping_address! }</p>
-      <div style={{ display: "none" }}><InvoicePrint curOrder={curOrder}ref={componentRef} /></div>
-      <Button
-      	className="header-button ps-personal-space"
-      	color='success'
-      	onClick={handlePrint}
-    	>Print</Button>
-    </div>
+    			</tbody>
+  			</Table>
+  			<h3>Shipping: ${ calculateShipping() }</h3>
+  			<h3>Total Cost: ${ calculateTotalCost() }</h3>
+  			<p><i>Thank you for your business!</i></p>
+		</div>
 	);
-};
+});
 
-export default Invoice;
+export default InvoicePrint;
