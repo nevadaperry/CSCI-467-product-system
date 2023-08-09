@@ -6,8 +6,10 @@ import * as api from '../api';
 
 import PackingPrint from './Printables/PackingPrint';
 
-function Packing({ curOrder }) {
-	const [order, orderLoad] = useLoad(() => api.readOrder(curOrder), curOrder);
+function Packing({ curOrder, setParentRefresh }) {
+	const [refreshOrdinal, setRefreshOrdinal] = useState(1);
+
+	const [order, orderLoad] = useLoad(() => api.readOrder(curOrder), refreshOrdinal * curOrder);
 	const [feeSchedule, feeScheduleLoad] = useLoad(
 	  () => api.readFeeSchedule(),
 	  1
@@ -38,8 +40,7 @@ function Packing({ curOrder }) {
 		if (!shipped) {
 			setShipped(true);
 		}
-	}
-	if (order.status === 'authorized') {
+	} else {
 		if (shipped) {
 			setShipped(false);
 		}
@@ -49,6 +50,8 @@ function Packing({ curOrder }) {
 		if (!shipped) {
 			api.updateOrder(curOrder, order, {...order, status: 'shipped'});
 			setShipped(true);
+			setRefreshOrdinal(o => o + 1);
+			setParentRefresh(o => o + 1);
 		}
 	}
 
@@ -136,6 +139,7 @@ function Packing({ curOrder }) {
 	      className="header-button ps-personal-space"
 	      color={shipped ? 'secondary' : 'success'}
 	      onClick={() => markAsShipped()}
+	      disabled={shipped}
 	    >{shipped ? "Shipped!" : "Mark as Shipped"}</Button>
   	</div>
 	);
