@@ -464,11 +464,15 @@ export async function listOrders(db: pg.Pool, filters: OrderFilters) {
       os.date_placed,
       stats_1.line_items,
       --stats_2.total_price
-      os.total_price
+      os.total_price,
+      cs.name as customer_name,
+      cs.email as customer_email
     FROM order_state os
     JOIN "order" o ON os.order_id = o.id
     JOIN stats_1 ON stats_1.order_id = o.id
     JOIN stats_2 ON stats_2.order_id = o.id
+    JOIN customer_state cs ON cs.customer_id = o.customer_id
+      AND cs.is_latest = true AND cs.deleted = false
     WHERE os.is_latest = true
       AND os.status = ANY(${
         filters.status ? [filters.status] : orderStatuses
