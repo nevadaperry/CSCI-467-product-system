@@ -29,9 +29,7 @@ async function handleApiResponse<T>(fn: () => Promise<AxiosResponse<T, any>>) {
   } catch (e: any) {
     const axiosError = e as AxiosError;
     console.log('axiosError:', JSON.stringify(axiosError, null, 2));
-    throw new Error(
-      `Error from server: ${JSON.stringify(axiosError.response?.data, null, 2)}`
-    );
+    throw new Error(`${JSON.stringify(axiosError.response?.data, null, 2)}`);
   }
 }
 
