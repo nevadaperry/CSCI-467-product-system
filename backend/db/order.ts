@@ -224,6 +224,8 @@ export async function readOrder(db: pg.Pool, id: number) {
         AND ps.is_latest = true
         AND ps.deleted = false
       WHERE os.order_id = ${id}
+        AND os.is_latest = true
+        AND os.deleted = false
     ), stats_2 AS (
       SELECT
         stats_1.subtotal + weight_bracket_of_order.fee AS total_price
