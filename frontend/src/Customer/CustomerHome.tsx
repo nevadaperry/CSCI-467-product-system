@@ -18,8 +18,8 @@ function CustomerHome() {
   const [totalPrice, setTotalPrice] = useState(0);
   const [orderCompleted, setOrderCompleted] = useState(false); // Add this line
 
-  const addToCart = (product) => {
-    setCartItems([...cartItems, { ...product, quantitySelected: 1 }]);
+  const addToCart = (product, quantity) => {
+    setCartItems([...cartItems, { ...product, quantitySelected: quantity }]);
     var curTotal: number = totalPrice + +product.price;
     setTotalPrice(curTotal);
   };

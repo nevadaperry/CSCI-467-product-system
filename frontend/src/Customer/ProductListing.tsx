@@ -82,6 +82,7 @@ function ProductListing({ addToCart }) {
                     <Input
                       type="number"
                       min="1"
+                      max={product.quantity}
                       value={newQuantities[index] ?? 1}
                       className="ps-input"
                       onChange={(e) => {
@@ -96,7 +97,7 @@ function ProductListing({ addToCart }) {
                     <Button
                       className="ps-input"
                       color="success"
-                      onClick={() => addToCart(product)}
+                      onClick={() => addToCart(product, newQuantities[index])}
                     >
                       Add to cart
                     </Button>
