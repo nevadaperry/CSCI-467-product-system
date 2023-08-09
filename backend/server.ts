@@ -75,7 +75,8 @@ async function startAgenda(db: pg.Pool) {
     }
   });
   await agenda.start();
-  await agenda.every('0 0 * * *', 'pull-legacy-data');
+  // Run pull-legacy-data every 15 minutes
+  await agenda.every('*/15 * * * *', 'pull-legacy-data');
   console.log(`Successfully started Agenda`);
   return agenda;
 }
