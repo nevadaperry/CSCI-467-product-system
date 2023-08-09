@@ -46,12 +46,6 @@ function CustomerHome() {
             color={currentSection === Section.CART ? 'success' : 'secondary'}
             onClick={() => setCurrentSection(Section.CART)}
           >
-            Cart
-          </Button>
-          <Button
-            color="success"
-            onClick={() => console.log('Go to cart page')}
-          >
             Cart ({cartItems.length})
           </Button>
         </div>

@@ -83,10 +83,12 @@ function CartPage({
       setOrderCompleted(true);
     } catch (error) {
       console.error('Error creating order:', error);
+      throw error;
     }
   };
 
   if (orderCompleted) {
+    setCartItems([]);
     return (
       <div>
         <h2>Order Complete</h2>
@@ -181,6 +183,7 @@ function CartPage({
             type="text"
             value={creditCardExp}
             onChange={CreditCardExpChange}
+            placeholder="MM/YY"
           />
         </div>
         <div>
