@@ -17,7 +17,31 @@ function validateOrder(order: Order) {
   if ((order.line_items?.length ?? 0) === 0)
     throw new Error(`Missing line_items`);
   if (!order.cc_full?.digits) throw new Error(`Missing cc_full.digits`);
+  if (order.cc_full.digits.match('^[0-9]{4}.[0-9]{4}.[0-9]{4}.[0-9]{4}$')) {
+    order.cc_full.digits = `${order.cc_full.digits.slice(
+      0,
+      4
+    )}${order.cc_full.digits.slice(5, 9)}${order.cc_full.digits.slice(
+      10,
+      14
+    )}${order.cc_full.digits.slice(15, 19)}`;
+  } else if (order.cc_full.digits.match('^[0-9]{16}$')) {
+    // It's fine as is
+  } else {
+    throw new Error(`Expected XXXX-XXXX-XXXX-XXXX card number`);
+  }
   if (!order.cc_full?.exp) throw new Error(`Missing cc_full.exp`);
+  if (order.cc_full.exp.match('^[0-9]{2}.[0-9]{2}$')) {
+    // Replace MM/YY with MM/YYYY
+    order.cc_full.exp = `${order.cc_full.exp.slice(
+      0,
+      2
+    )}/20${order.cc_full.exp.slice(3, 5)}`;
+  } else if (order.cc_full.exp.match('^[0-9]{2}/[0-9]{4}$')) {
+    // It's fine as-is
+  } else {
+    throw new Error(`Expected MM/YY or MM/YYYY expiration date`);
+  }
   if (!order.cc_full?.cvv) throw new Error(`Missing cc_full.cvv`);
   if (!order.cc_full?.cardholder_name)
     throw new Error(`Missing cc_full.cardholder_name`);
