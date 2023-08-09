@@ -17,7 +17,31 @@ function validateOrder(order: Order) {
   if ((order.line_items?.length ?? 0) === 0)
     throw new Error(`Missing line_items`);
   if (!order.cc_full?.digits) throw new Error(`Missing cc_full.digits`);
+  if (order.cc_full.digits.match('^[0-9]{4}.[0-9]{4}.[0-9]{4}.[0-9]{4}$')) {
+    order.cc_full.digits = `${order.cc_full.digits.slice(
+      0,
+      4
+    )}${order.cc_full.digits.slice(5, 9)}${order.cc_full.digits.slice(
+      10,
+      14
+    )}${order.cc_full.digits.slice(15, 19)}`;
+  } else if (order.cc_full.digits.match('^[0-9]{16}$')) {
+    // It's fine as is
+  } else {
+    throw new Error(`Expected XXXX-XXXX-XXXX-XXXX card number`);
+  }
   if (!order.cc_full?.exp) throw new Error(`Missing cc_full.exp`);
+  if (order.cc_full.exp.match('^[0-9]{2}.[0-9]{2}$')) {
+    // Replace MM/YY with MM/YYYY
+    order.cc_full.exp = `${order.cc_full.exp.slice(
+      0,
+      2
+    )}/20${order.cc_full.exp.slice(3, 5)}`;
+  } else if (order.cc_full.exp.match('^[0-9]{2}/[0-9]{4}$')) {
+    // It's fine as-is
+  } else {
+    throw new Error(`Expected MM/YY or MM/YYYY expiration date`);
+  }
   if (!order.cc_full?.cvv) throw new Error(`Missing cc_full.cvv`);
   if (!order.cc_full?.cardholder_name)
     throw new Error(`Missing cc_full.cardholder_name`);
@@ -224,6 +248,8 @@ export async function readOrder(db: pg.Pool, id: number) {
         AND ps.is_latest = true
         AND ps.deleted = false
       WHERE os.order_id = ${id}
+        AND os.is_latest = true
+        AND os.deleted = false
     ), stats_2 AS (
       SELECT
         stats_1.subtotal + weight_bracket_of_order.fee AS total_price
@@ -462,11 +488,15 @@ export async function listOrders(db: pg.Pool, filters: OrderFilters) {
       os.date_placed,
       stats_1.line_items,
       --stats_2.total_price
-      os.total_price
+      os.total_price,
+      cs.name as customer_name,
+      cs.email as customer_email
     FROM order_state os
     JOIN "order" o ON os.order_id = o.id
     JOIN stats_1 ON stats_1.order_id = o.id
     JOIN stats_2 ON stats_2.order_id = o.id
+    JOIN customer_state cs ON cs.customer_id = o.customer_id
+      AND cs.is_latest = true AND cs.deleted = false
     WHERE os.is_latest = true
       AND os.status = ANY(${
         filters.status ? [filters.status] : orderStatuses

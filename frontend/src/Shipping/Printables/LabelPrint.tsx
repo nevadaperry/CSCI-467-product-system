@@ -1,28 +1,12 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { useLoad } from '../custom-hooks';
-import { Button, Table, Input, Label, Spinner } from 'reactstrap';
-import { ReactToPrint, useReactToPrint } from 'react-to-print';
-import * as api from '../api';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Button, Table, Input, Label } from 'reactstrap';
+import { useLoad } from '../../custom-hooks';
+import * as api from '../../api';
 
-import LabelPrint from './Printables/LabelPrint';
-
-function ShippingLabel({curOrder}) {
-	const [order, orderLoad] = useLoad(() => api.readOrder(curOrder), curOrder);
-	const [feeSchedule, feeScheduleLoad] = useLoad(
-	  () => api.readFeeSchedule(),
-	  1
-	);
-
-	const componentRef = useRef();
-  	const handlePrint = useReactToPrint({
-    	content: () => componentRef.current,
-  	});
+const LabelPrint = React.forwardRef((props, ref) => {
+	const {order, feeSchedule, ...otherProps} = props;
 
 	const [shipped, setShipped] = useState(false);
-
-	if (orderLoad.status === 'loading' || feeScheduleLoad.status === 'loading') {
-    	return <Spinner />;
-  	}
 
   	if (!order) {
     	// If order is not available, show an error message or handle it accordingly
@@ -84,19 +68,14 @@ function ShippingLabel({curOrder}) {
 	};
 
 	return (
-		<div>
-	      	<h3>Shipping Label</h3>
-	      	<h4>Shipping: ${ calculateShipping() }&emsp;&emsp;Weight: { calculateWeight() } lbs.</h4>
-	      	<h4>Ship To:</h4>
-	      	<p>{ order.customer_name! }<br/>{ order.shipping_address! }</p>
-	      	<div style={{ display: "none" }}><LabelPrint order={order} feeSchedule={feeSchedule} ref={componentRef} /></div>
-	      	<Button
-		      	className="header-button ps-personal-space"
-		      	color='success'
-		      	onClick={handlePrint}
-	    	>Print</Button>
-    	</div>
-	);
-}
+		<div style={{ margin: 20 }} ref={ref}>
+			<p>Product System&emsp;&emsp;&emsp;&emsp;Postage: ${calculateShipping()} PREPAID<br/>
+	      	123 Example St&emsp;&emsp;&emsp;&emsp;Total Weight: ${calculateWeight()}<br/>
+	      	New York, NY 12345</p>
 
-export default ShippingLabel;
+	      	<p>&emsp;&emsp;&emsp;&emsp;{ order.customer_name! }<br/>&emsp;&emsp;&emsp;&emsp;{ order.shipping_address! }</p>
+		</div>
+	);
+});
+
+export default LabelPrint;

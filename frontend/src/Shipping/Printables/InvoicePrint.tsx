@@ -1,22 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Table, Input, Label, Spinner } from 'reactstrap';
+import { Button, Table, Input, Label } from 'reactstrap';
 import { useLoad } from '../../custom-hooks';
 import * as api from '../../api';
 
 const InvoicePrint = React.forwardRef((props, ref) => {
-	const {curOrder, ...otherProps} = props;
-
-	const [order, orderLoad] = useLoad(() => api.readOrder(curOrder), curOrder);
-	const [feeSchedule, feeScheduleLoad] = useLoad(
-	  () => api.readFeeSchedule(),
-	  1
-	);
+	const {order, feeSchedule, ...otherProps} = props;
 
 	const [shipped, setShipped] = useState(false);
-
-	if (orderLoad.status === 'loading' || feeScheduleLoad.status === 'loading') {
-    	return <Spinner />;
-  	}
 
   	if (!order) {
     	// If order is not available, show an error message or handle it accordingly
@@ -94,7 +84,7 @@ const InvoicePrint = React.forwardRef((props, ref) => {
 			        	<td>{ item.quantity }</td>
 			        	<td>{ item.product!.description }</td>
 			        	<td>{ item.product!.price }</td>
-			        	<td>{ item.product!.price * item.quantity }</td>
+			        	<td>{ (item.product!.price * item.quantity).toFixed(2) }</td>
 			        </tr>
       				))}
     				<tr key="totals"><th scope="row"><i>Totals:</i></th>

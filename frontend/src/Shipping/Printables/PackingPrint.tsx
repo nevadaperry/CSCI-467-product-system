@@ -1,28 +1,12 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { useLoad } from '../custom-hooks';
-import { Button, Table, Input, Label, Spinner } from 'reactstrap';
-import { ReactToPrint, useReactToPrint } from 'react-to-print';
-import * as api from '../api';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Button, Table, Input, Label } from 'reactstrap';
+import { useLoad } from '../../custom-hooks';
+import * as api from '../../api';
 
-import LabelPrint from './Printables/LabelPrint';
-
-function ShippingLabel({curOrder}) {
-	const [order, orderLoad] = useLoad(() => api.readOrder(curOrder), curOrder);
-	const [feeSchedule, feeScheduleLoad] = useLoad(
-	  () => api.readFeeSchedule(),
-	  1
-	);
-
-	const componentRef = useRef();
-  	const handlePrint = useReactToPrint({
-    	content: () => componentRef.current,
-  	});
+const PackingPrint = React.forwardRef((props, ref) => {
+	const {order, feeSchedule, ...otherProps} = props;
 
 	const [shipped, setShipped] = useState(false);
-
-	if (orderLoad.status === 'loading' || feeScheduleLoad.status === 'loading') {
-    	return <Spinner />;
-  	}
 
   	if (!order) {
     	// If order is not available, show an error message or handle it accordingly
@@ -84,19 +68,34 @@ function ShippingLabel({curOrder}) {
 	};
 
 	return (
-		<div>
-	      	<h3>Shipping Label</h3>
-	      	<h4>Shipping: ${ calculateShipping() }&emsp;&emsp;Weight: { calculateWeight() } lbs.</h4>
-	      	<h4>Ship To:</h4>
-	      	<p>{ order.customer_name! }<br/>{ order.shipping_address! }</p>
-	      	<div style={{ display: "none" }}><LabelPrint order={order} feeSchedule={feeSchedule} ref={componentRef} /></div>
-	      	<Button
-		      	className="header-button ps-personal-space"
-		      	color='success'
-		      	onClick={handlePrint}
-	    	>Print</Button>
-    	</div>
+		<div style={{ margin: 20 }} ref={ref}>
+			<h1>Product System</h1>
+			<p><i>Your source for all things automotive.</i></p>
+			<h2>Packing List</h2>
+  			<Table>
+        		<thead>
+          			<tr key="header"><th>ID</th><th>Quantity</th><th>Product Description</th><th>Unit Weight<br/>(lbs.)</th><th>Combined<br/>Weight(lbs.)</th></tr>
+        		</thead>
+        		<tbody>
+        			{order.line_items.map( (item, index) => (
+            			<tr key={index}><th scope="row">{item.product!.id}</th>
+			            	<td>{ item.quantity }</td>
+			            	<td>{ item.product!.description }</td>
+			            	<td>{ item.product!.weight }</td>
+			            	<td>{ item.product!.weight * item.quantity }</td>
+           				</tr>
+          			))}
+        			<tr key="totals"><th scope="row"><i>Totals:</i></th>
+						<td><i>{ calculateQuantity() }</i></td>
+						<td>-----</td>
+						<td>-----</td>
+						<td><i>{ calculateWeight() }</i></td>
+					</tr>
+        		</tbody>
+      		</Table>
+  			<p><i>Thank you for your business!</i></p>
+		</div>
 	);
-}
+});
 
-export default ShippingLabel;
+export default PackingPrint;

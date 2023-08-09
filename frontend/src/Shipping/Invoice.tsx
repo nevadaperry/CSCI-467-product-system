@@ -96,7 +96,7 @@ const Invoice = ({curOrder}) => {
             	<td>{ item.quantity }</td>
             	<td>{ item.product!.description }</td>
             	<td>{ item.product!.price }</td>
-            	<td>{ item.product!.price * item.quantity }</td>
+            	<td>{ (item.product!.price * item.quantity).toFixed(2) }</td>
             </tr>
           ))}
         	<tr key="totals"><th scope="row"><i>Totals:</i></th>
@@ -110,7 +110,7 @@ const Invoice = ({curOrder}) => {
       <h4>Shipping: ${ calculateShipping() }&emsp;&emsp;Total Cost: ${ calculateTotalCost() }</h4>
       <h4>Bill To:</h4>
       <p>{ order.customer_name! }<br/>{ order.shipping_address! }</p>
-      <div style={{ display: "none" }}><InvoicePrint curOrder={curOrder}ref={componentRef} /></div>
+      <div style={{ display: "none" }}><InvoicePrint order={order} feeSchedule={feeSchedule} ref={componentRef} /></div>
       <Button
       	className="header-button ps-personal-space"
       	color='success'

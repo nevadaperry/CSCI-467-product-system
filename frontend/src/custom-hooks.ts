@@ -22,6 +22,7 @@ export function useLoad<T>(
       return;
     }
     setResourceLoad({ status: 'loading' });
+    console.log(trigger);
     (async () => {
       try {
         setResource(await loader());

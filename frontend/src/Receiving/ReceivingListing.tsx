@@ -7,38 +7,30 @@ import { Product } from '../../../shared/resource';
 function ReceivingListing() {
   const [idFilter, setIdFilter] = useState('');
   const [descriptionFilter, setDescriptionFilter] = useState('');
-  const refreshOrdinal = useRef(1);
+  const [refreshOrdinal, setRefreshOrdinal] = useState(1);
   const productFilters = useMemo(() => {
-    refreshOrdinal.current++;
+    setRefreshOrdinal((v) => v + 1);
     return { id: idFilter, description: descriptionFilter };
   }, [idFilter, descriptionFilter]);
   const [products, productsLoad] = useLoad(
     () => api.listProducts(productFilters),
-    refreshOrdinal.current
+    refreshOrdinal
   );
 
-  const [listQuantities, setListQuantities] = useState<number[]>([]);
+  const [listQuantities, setListQuantities] = useState<{
+    [index: number]: number;
+  }>({});
   useEffect(() => {
-    setListQuantities(products?.map((product) => product.quantity) ?? []);
+    setListQuantities(products?.map((product) => product.quantity) ?? {});
   }, [products]);
-  const productsWithListQuantities = useMemo(() => {
-    return (
-      products
-        ?.map((product, index) => ({
-          ...product,
-          listQuantity: listQuantities[index] ?? product.quantity,
-        }))
-        .sort((a, b) => a.part_number - b.part_number) ?? []
-    );
-  }, [products, listQuantities]);
 
   const updateStock = (item: Product, index: number) => {
     (async () => {
-      api.updateProduct(item.id!, item, {
+      await api.updateProduct(item.id!, item, {
         ...item,
         quantity: listQuantities[index],
       });
-      refreshOrdinal.current++;
+      setRefreshOrdinal((v) => v + 1);
     })();
   };
 
@@ -83,46 +75,48 @@ function ReceivingListing() {
             </tr>
           </thead>
           <tbody>
-            {productsWithListQuantities.map((product, index) => (
-              <tr key={product.id}>
-                <td className="ps-cell ps-right">#{product.part_number}</td>
-                <td className="ps-cell ps-right">
-                  <img src={product.picture_url} alt="Product" />
-                </td>
-                <td className="ps-cell ps-left">{product.description}</td>
-                <td className="ps-cell ps-right">{product.weight} lb</td>
-                <td className="ps-cell ps-right">${product.price}</td>
-                <td className="ps-cell ps-right">
-                  {product.quantity} in stock
-                </td>
-                <td className="ps-cell ps-left">Qty:</td>
-                <td className="ps-cell ps-left">
-                  <Input
-                    type="number"
-                    min="0"
-                    value={product.listQuantity}
-                    className="ps-input"
-                    onChange={(e) =>
-                      setListQuantities({
-                        ...listQuantities,
-                        [index]: +e.target.value,
-                      })
-                    }
-                  />
-                </td>
-                <td className="ps-cell ps-left">
-                  <Button
-                    className="ps-input"
-                    color="success"
-                    onClick={() => {
-                      updateStock(product, index);
-                    }}
-                  >
-                    Update
-                  </Button>
-                </td>
-              </tr>
-            ))}
+            {products
+              ?.sort((a, b) => a.part_number - b.part_number)
+              .map((product, index) => (
+                <tr key={product.id}>
+                  <td className="ps-cell ps-right">#{product.part_number}</td>
+                  <td className="ps-cell ps-right">
+                    <img src={product.picture_url} alt="Product" />
+                  </td>
+                  <td className="ps-cell ps-left">{product.description}</td>
+                  <td className="ps-cell ps-right">{product.weight} lb</td>
+                  <td className="ps-cell ps-right">${product.price}</td>
+                  <td className="ps-cell ps-right">
+                    {product.quantity} in stock
+                  </td>
+                  <td className="ps-cell ps-left">Qty:</td>
+                  <td className="ps-cell ps-left">
+                    <Input
+                      type="number"
+                      min="0"
+                      value={listQuantities[index] ?? product.quantity}
+                      className="ps-input"
+                      onChange={(e) =>
+                        setListQuantities({
+                          ...listQuantities,
+                          [index]: +e.target.value,
+                        })
+                      }
+                    />
+                  </td>
+                  <td className="ps-cell ps-left">
+                    <Button
+                      className="ps-input"
+                      color="success"
+                      onClick={() => {
+                        updateStock(product, index);
+                      }}
+                    >
+                      Update
+                    </Button>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </Table>
       )}

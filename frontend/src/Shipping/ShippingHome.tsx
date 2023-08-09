@@ -14,7 +14,9 @@ enum Section {
 }
 
 export default function ShippingHome() {
-  const [orders, ordersLoad] = useLoad(() => api.listOrders({}), 1);
+  const [refreshOrdinal, setRefreshOrdinal] = useState(1)
+  const [orders, ordersLoad] = useLoad(() => api.listOrders({}), refreshOrdinal);
+
   const [currentSection, setCurrentSection] = useState(Section.PACKING);
   const [currentOrder, setCurrentOrder] = useState(null);
 
@@ -27,7 +29,8 @@ export default function ShippingHome() {
   }
 
   function handleSelect(e) {
-    setCurrentOrder(e.target.value);
+    if (e.target.value != "none")
+      setCurrentOrder(e.target.value);
   }
 
   return (
@@ -45,9 +48,10 @@ export default function ShippingHome() {
       type="select"
       onChange={handleSelect}
       >
+        <option key="-1" value="none">Select an order...</option>
         {orders.map( (order, index) => (
-            <option key={index} value={order.id}>
-              {new Date(order.date_placed!).toLocaleDateString()}: Order #{order.id}
+            <option key={index} value={order.id} selected={order.id === currentOrder ? true : false}>
+              {new Date(order.date_placed!).toLocaleDateString()}: Order #{order.id} from {order.customer_name!} [{order.status}]
             </option>
           ))}
       </Input>
@@ -75,7 +79,7 @@ export default function ShippingHome() {
       { currentOrder === null ? (
         <div>Select an order...</div>
       ) : currentSection === Section.PACKING ? (
-        <Packing curOrder={currentOrder}/>
+        <Packing curOrder={currentOrder} setParentRefresh={setRefreshOrdinal}/>
       ) : currentSection === Section.INVOICE ? (
         <Invoice curOrder={currentOrder}/>
       ) : (
