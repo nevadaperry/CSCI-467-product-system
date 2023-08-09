@@ -39,6 +39,46 @@ export async function createProduct(db: pg.Pool, product: Product) {
   return result;
 }
 
+/**
+ * Only for backend use
+ */
+export async function upsertProduct(db: pg.Pool, product: Product) {
+  const {
+    rows: [result],
+  } = await db.query<CreateResult<Product>>(SQL`
+    WITH new_product AS (
+      INSERT INTO product DEFAULT VALUES
+      RETURNING id
+    )
+    INSERT INTO product_state (
+      product_id,
+      part_number,
+      description,
+      weight,
+      picture_url,
+      price,
+      quantity
+    )
+    SELECT
+      new_product.id,
+      ${product.part_number},
+      ${product.description},
+      ${product.weight},
+      ${product.picture_url},
+      ${product.price},
+      ${product.quantity}
+    FROM new_product
+    ON CONFLICT (part_number) WHERE is_latest DO UPDATE SET
+      description = excluded.description,
+      weight = excluded.weight,
+      picture_url = excluded.picture_url,
+      price = excluded.price
+      -- (Don't change the inventory quantity)
+    RETURNING product_id AS id
+  `);
+  return result;
+}
+
 export async function readProduct(db: pg.Pool, id: number) {
   const {
     rows: [product],
