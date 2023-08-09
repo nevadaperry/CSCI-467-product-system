@@ -1,7 +1,9 @@
-// export default CartPage;
 import React, { useState } from 'react';
 import { Table, Button } from 'reactstrap';
 import { createOrder } from '../api';
+import { useNavigate } from 'react-router-dom';
+
+
 
 function CartPage({
   cartItems,
@@ -23,8 +25,17 @@ function CartPage({
 
   const [shippingAddress, setShippingAddress] = useState('');
   const [useSameAddress, setUseSameAddress] = useState(false);
+  
+  let navigate = useNavigate()
 
-  //TODO Finish the complete order function
+  const handleClick = () => {
+   
+    setCartItems([]);
+    setTotalPrice(0);
+    setOrderCompleted(false); 
+    navigate('./Home')
+ }
+
 
   const RemoveItem = (productId) => {
     const updatedCart = cartItems.filter((item) => item.id !== productId);
@@ -81,17 +92,44 @@ function CartPage({
       const response = await createOrder(orderData);
       setOrderAuthNumber(response.auth_number!);
       setOrderCompleted(true);
+
+      await sendConfirmationEmail(response.id);
+
     } catch (error) {
       console.error('Error creating order:', error);
+          console.error('Error response:', error.response); // Add this line
+
     }
   };
+
+  const sendConfirmationEmail = async (orderId) => {
+    try {
+      // Make an API call to your backend to trigger email sending
+      const response = await fetch(`/api/send-email/${orderId}`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        console.log('Confirmation email sent successfully');
+      } else {
+        console.error('Failed to send confirmation email');
+      }
+    } catch (error) {
+      console.error('Error sending confirmation email:', error);
+    }
+  };
+
 
   if (orderCompleted) {
     return (
       <div>
         <h2>Order Complete</h2>
         <p>Order Auth Number: {orderAuthNumber}</p>
-        <p>Thank you for your purchase!</p>
+        <p>Oder Name: {customerName}</p>
+        <p>Confirmation Email: {customerEmail}</p>
+        <p>Thank you for your purchase!
+        <button onClick={handleClick}> Return </button>
+        </p>
       </div>
     );
   }
@@ -189,7 +227,7 @@ function CartPage({
             type="text"
             value={creditCardCVV}
             onChange={CreditCardCVVChange}
-            maxLength={4} // Amex uses 4 digits
+            maxLength={4} 
           />
         </div>
         <div>
