@@ -102,6 +102,16 @@ export async function createOrder(db: pg.Pool, order: Order) {
     exp: order.cc_full!.exp,
   });
 
+  if (!paymentResult.authorization) {
+    throw new Error(
+      `Our payment processor declined your purchase. Details: ${JSON.stringify(
+        paymentResult,
+        null,
+        2
+      )}`
+    );
+  }
+
   const {
     rows: [createResult],
   } = await db.query<CreateResult<Order>>(SQL`
