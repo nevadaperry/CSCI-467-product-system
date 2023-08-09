@@ -1,7 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useLoad } from '../custom-hooks';
 import { Button, Table, Input, Label, Spinner } from 'reactstrap';
+import { ReactToPrint, useReactToPrint } from 'react-to-print';
 import * as api from '../api';
+
+import PackingPrint from './Printables/PackingPrint';
 
 function Packing({ curOrder }) {
 	const [order, orderLoad] = useLoad(() => api.readOrder(curOrder), curOrder);
@@ -9,6 +12,11 @@ function Packing({ curOrder }) {
 	  () => api.readFeeSchedule(),
 	  1
 	);
+
+	const componentRef = useRef();
+  const handlePrint = useReactToPrint({
+    content: () => componentRef.current,
+  });
 
 	const [shipped, setShipped] = useState(false);
 
@@ -27,13 +35,21 @@ function Packing({ curOrder }) {
 
 	//TODO: make React not angry at this (throws re-render error when order is shipped)
 	if (order.status === 'shipped') {
-		setShipped(true);
+		if (!shipped) {
+			setShipped(true);
+		}
+	}
+	if (order.status === 'authorized') {
+		if (shipped) {
+			setShipped(false);
+		}
 	}
 
 	function markAsShipped() {
-		if (shipped) return;
-		api.updateOrder(curOrder, order, {...order, status: 'shipped'});
-		setShipped(true);
+		if (!shipped) {
+			api.updateOrder(curOrder, order, {...order, status: 'shipped'});
+			setShipped(true);
+		}
 	}
 
 	// Calculates the total quantity of items.
@@ -88,39 +104,40 @@ function Packing({ curOrder }) {
 
 	return (
 		<div>
-          <h3>Packing List</h3>
-          <Table>
-            <thead>
-              <tr key="header"><th>ID</th><th>Quantity</th><th>Product Description</th><th>Unit Weight<br/>(lbs.)</th><th>Combined<br/>Weight(lbs.)</th></tr>
-            </thead>
-            <tbody>
-            {order.line_items.map( (item, index) => (
-                <tr key={index}><th scope="row">{item.product!.id}</th>
-                	<td>{ item.quantity }</td>
-                	<td>{ item.product!.description }</td>
-                	<td>{ item.product!.weight }</td>
-                	<td>{ item.product!.weight * item.quantity }</td>
-                </tr>
-              ))}
-            	<tr key="totals"><th scope="row"><i>Totals:</i></th>
-   					<td><i>{ calculateQuantity() }</i></td>
-   					<td>-----</td>
-   					<td>-----</td>
-   					<td><i>{ calculateWeight() }</i></td>
-   				</tr>
-            </tbody>
-          </Table>
-          <Button
-	        className="header-button ps-personal-space"
-	        color='success'
-	        onClick={() => window.open("https://google.com")}
-	      >Print</Button>
-	      <Button
-	        className="header-button ps-personal-space"
-	        color={shipped ? 'secondary' : 'success'}
-	        onClick={() => markAsShipped()}
-	      >{shipped ? "Shipped!" : "Mark as Shipped"}</Button>
-        </div>
+      <h3>Packing List</h3>
+      <Table>
+        <thead>
+          <tr key="header"><th>ID</th><th>Quantity</th><th>Product Description</th><th>Unit Weight<br/>(lbs.)</th><th>Combined<br/>Weight(lbs.)</th></tr>
+        </thead>
+        <tbody>
+        {order.line_items.map( (item, index) => (
+            <tr key={index}><th scope="row">{item.product!.id}</th>
+            	<td>{ item.quantity }</td>
+            	<td>{ item.product!.description }</td>
+            	<td>{ item.product!.weight }</td>
+            	<td>{ item.product!.weight * item.quantity }</td>
+            </tr>
+          ))}
+        	<tr key="totals"><th scope="row"><i>Totals:</i></th>
+					<td><i>{ calculateQuantity() }</i></td>
+					<td>-----</td>
+					<td>-----</td>
+					<td><i>{ calculateWeight() }</i></td>
+				</tr>
+        </tbody>
+      </Table>
+      <div style={{ display: "none" }}><PackingPrint order={order} feeSchedule={feeSchedule} ref={componentRef} /></div>
+      <Button
+	      className="header-button ps-personal-space"
+	      color='success'
+	      onClick={handlePrint}
+	    >Print</Button>
+	    <Button
+	      className="header-button ps-personal-space"
+	      color={shipped ? 'secondary' : 'success'}
+	      onClick={() => markAsShipped()}
+	    >{shipped ? "Shipped!" : "Mark as Shipped"}</Button>
+  	</div>
 	);
 }
 

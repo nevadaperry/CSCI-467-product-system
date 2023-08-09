@@ -27,7 +27,8 @@ export default function ShippingHome() {
   }
 
   function handleSelect(e) {
-    setCurrentOrder(e.target.value);
+    if (e.target.value != "none")
+      setCurrentOrder(e.target.value);
   }
 
   return (
@@ -45,6 +46,7 @@ export default function ShippingHome() {
       type="select"
       onChange={handleSelect}
       >
+        <option key="-1" value="none">Select an order...</option>
         {orders.map( (order, index) => (
             <option key={index} value={order.id}>
               {new Date(order.date_placed!).toLocaleDateString()}: Order #{order.id}
